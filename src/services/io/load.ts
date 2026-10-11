@@ -597,6 +597,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
           );
         p.removed = true;
       });
+      Provinces.updateClaims(); // claims and occupations by removed states
 
       // drop the broken route object only: a valid route may share its id. Its cell links are cleaned below
       pack.routes = pack.routes.filter(route => {

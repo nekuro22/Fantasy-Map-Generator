@@ -181,7 +181,7 @@ States (countries) data is stored as an array of objects with strict element ord
 
 - `i`: `number` - state id, always equal to the array index
 - `name`: `string` - short (proper) form of the state name
-- `form`: `string` - state form type. Available types are `Monarchy`, `Republic`, `Theocracy`, `Union`, and `Anarchy`
+- `form`: `string` - state form type. Available types are `Monarchy`, `Republic`, `Theocracy`, `Union`, `Anarchy` and `Socialist`. `Socialist` is never generated, only set by the user
 - `formName`: `string` - string form name, used to get state `fullName`
 - `fullName`: `string` - full state name. Combination of the proper name and state `formName`
 - `color`: `string` - state color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`)
@@ -203,8 +203,8 @@ States (countries) data is stored as an array of objects with strict element ord
 - `military`: `Regiment[]` - list of state regiments, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `label`: `Label` - optional state-label data. If absent, the renderer derives the text, path, and relative size from the State data and label mode
 - `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
-- `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0), jittered per state. Always `0` for neutrals
-- `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0), jittered per state. Always `0` for neutrals
+- `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0, Socialist 0.3), jittered per state. Always `0` for neutrals
+- `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0, Socialist 0.05), jittered per state. Always `0` for neutrals
 - `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `pollTax × (rural + urban)`. Always `0` for neutrals
 - `lock`: `boolean` - `true` if state is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if state is removed
@@ -245,6 +245,9 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `urban`: `number` - urban (burg) population of state province. In population points
 - `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `label`: `Label` - optional Province-label overrides. If absent, the renderer derives the text and path from Province data
+- `cores`: `number[]` - optional. Ids of states holding a core on the province: land they see as their own, as in Hearts of Iron. The owner has no core unless listed
+- `claims`: `number[]` - optional. Ids of states claiming the province without a core. A state is never in both lists
+- `controller`: `number` - optional. Id of the state occupying the province; absent when the owner holds it. Occupied provinces are hatched in the occupier's color. Claims and occupations by removed states are dropped, those of merged states pass to the ruling state
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed
 - `note`: `string` - optional. The user's note (legend) about the province, as html. Removed with it

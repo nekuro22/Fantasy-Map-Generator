@@ -99,7 +99,10 @@ export const METHODS = {
     "merge",
     "setPopulation",
     "setLocked",
-    "setCells"
+    "setCells",
+    "setClaim",
+    "setController",
+    "addOwnerCores"
   ],
   Cultures: [
     "rename",

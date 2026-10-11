@@ -23,7 +23,7 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { Province } from "@/generators/provinces-generator";
+import { CLAIM_KINDS, type Province } from "@/generators/provinces-generator";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
@@ -75,6 +75,21 @@ const columns: EditorColumn<Province>[] = [
     permanent: true,
     sortBy: province => pack.states[province.state]?.name || "",
     sortType: "alpha"
+  },
+  {
+    key: "controller",
+    label: "Controller",
+    width: "7em",
+    mobileHidden: true,
+    sortBy: province => pack.states[Provinces.getController(province)]?.name || "",
+    sortType: "alpha"
+  },
+  {
+    key: "claims",
+    label: "Claims",
+    width: "4.5em",
+    mobileHidden: true,
+    sortBy: province => (province.cores?.length ?? 0) * 1000 + (province.claims?.length ?? 0)
   },
   {
     key: "burgs",
@@ -172,6 +187,11 @@ function renderDialog(): void {
         ></button>
         <button id="provincesMerge" data-tip="Merge several provinces into one" class="icon-layer-group"></button>
         <button
+          id="provincesOwnerCores"
+          data-tip="Give every state a core on each province it owns"
+          class="icon-shield-alt"
+        ></button>
+        <button
           id="provincesAnnex"
           data-tip="Annex provinces: click the annexing province, then the provinces of the same state it absorbs. Hold Shift to keep annexing"
           class="icon-crown"
@@ -209,6 +229,7 @@ function renderDialog(): void {
   ensureEl("provincesRelease").addEventListener("click", triggerProvincesRelease);
   ensureEl("provincesAdd").addEventListener("click", enterAddProvinceMode);
   ensureEl("provincesMerge").addEventListener("click", openProvinceMergeDialog);
+  ensureEl("provincesOwnerCores").addEventListener("click", addOwnerCores);
   ensureEl("provincesAnnex").addEventListener("click", provincesAnnex.toggle);
   ensureEl("provincesRecolor").addEventListener("click", recolorProvinces);
 
@@ -222,6 +243,7 @@ function renderDialog(): void {
     const stateId = pack.provinces[p].state;
 
     if (el.tagName === "FILL-BOX") changeFill(el as FillBoxElement);
+    else if (cl.contains("provinceClaims")) editClaims(p);
     else if (cl.contains("name")) editProvinceName(p);
     else if (cl.contains("coaIcon"))
       void Controllers.EmblemsEditor.open("province", `provinceCOA${p}`, pack.provinces[p]);
@@ -244,6 +266,7 @@ function renderDialog(): void {
     if (!line) return;
     const p = +line.dataset.id!;
     if (cl.contains("cultureBase")) changeCapital(p, line, el.value);
+    else if (cl.contains("provinceController")) changeController(p, +el.value);
   });
 }
 
@@ -322,6 +345,8 @@ function renderProvincesPage(view: TableView<Province>): void {
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       const stateName = pack.states[p.state].name;
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
+      const stateNames = (ids?: number[]) => (ids ?? []).map(id => pack.states[id]?.name).join(", ") || "none";
+      const claimsTip = `Cores: ${stateNames(p.cores)}. Claims: ${stateNames(p.claims)}. Click to edit`;
       const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusProvince${p.i}`).size();
       EmblemRenderer.trigger(`provinceCOA${p.i}`, p.coa);
       return /* html */ `<div class="states" data-id=${p.i}>
@@ -334,6 +359,11 @@ function renderProvincesPage(view: TableView<Province>): void {
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase ${p.burgs!.length ? "" : "placeholder"}">${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}</select>
       </div>
       <input data-col="state" data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled>
+      <select data-col="controller" data-tip="State holding the province. Pick another state to mark the province as occupied by it" class="provinceController"${p.controller ? ' style="color: #b30000"' : ""}>${getControllerOptions(p)}</select>
+      <div data-col="claims">
+        <span data-tip="${claimsTip}" class="icon-flag pointer provinceClaims"></span>
+        <span data-tip="${claimsTip}" class="pointer provinceClaims">${p.cores?.length ?? 0}/${p.claims?.length ?? 0}</span>
+      </div>
       <div data-col="burgs">
         <span data-tip="Click to overview province burgs" class="icon-dot-circled pointer"></span>
         <span data-tip="Burgs count" class="provinceBurgs">${percentage ? `${rn(totals.burgs ? (p.burgs!.length / totals.burgs) * 100 : 0)}%` : p.burgs!.length}</span>
@@ -374,6 +404,82 @@ function renderProvincesPage(view: TableView<Province>): void {
   });
 
   updateDialog(dialogId, { width: "fit-content", position });
+}
+
+function getControllerOptions(province: Province): string {
+  const controller = Provinces.getController(province);
+  return pack.states
+    .filter(state => state.i && !state.removed)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(state => {
+      const label = state.i === province.state ? `${state.name} (owner)` : state.name;
+      return `<option value="${state.i}" ${state.i === controller ? "selected" : ""}>${label}</option>`;
+    })
+    .join("");
+}
+
+function changeController(provinceId: number, stateId: number): void {
+  try {
+    Provinces.setController(provinceId, stateId);
+  } catch (error) {
+    tip(errorText(error), false, "error");
+  }
+  Layers.draw("provinces");
+  refreshProvincesEditor();
+}
+
+function editClaims(provinceId: number): void {
+  const province = pack.provinces[provinceId];
+  const label = { core: "Core", claim: "Claim", none: "—" };
+  const states = pack.states
+    .filter(state => state.i && !state.removed)
+    .map(state => ({ state, kind: Provinces.getClaim(provinceId, state.i) }))
+    .sort(
+      (a, b) => CLAIM_KINDS.indexOf(a.kind) - CLAIM_KINDS.indexOf(b.kind) || a.state.name.localeCompare(b.state.name)
+    );
+  const rows = states
+    .map(({ state, kind }) => {
+      const owner = state.i === province.state ? " (owner)" : "";
+      const options = CLAIM_KINDS.map(k => `<option value="${k}" ${k === kind ? "selected" : ""}>${label[k]}</option>`);
+      return /* html */ `<div style="display: flex; justify-content: space-between; gap: 1em; padding: 1px 0">
+        <span>${state.fullName || state.name}${owner}</span>
+        <select data-state="${state.i}" style="width: 6em">${options.join("")}</select>
+      </div>`;
+    })
+    .join("");
+  alertMessage.innerHTML = /* html */ `<p style="margin-top: 0">A core is land a state sees as its own; a claim is land it only demands.</p>
+    <div id="provinceClaimsList" style="max-height: 20em; overflow-y: auto">${rows}</div>`;
+
+  $("#alert").dialog({
+    resizable: false,
+    title: `Claims on ${province.fullName || province.name}`,
+    width: "26em",
+    buttons: {
+      Apply: function (this: HTMLElement) {
+        try {
+          for (const select of ensureEl("provinceClaimsList").querySelectorAll<HTMLSelectElement>("select")) {
+            const stateId = +select.dataset.state!;
+            if (Provinces.getClaim(provinceId, stateId) !== select.value)
+              Provinces.setClaim(provinceId, stateId, select.value);
+          }
+        } catch (error) {
+          tip(errorText(error), false, "error");
+        }
+        refreshProvincesEditor();
+        $(this).dialog("close");
+      },
+      Cancel: function (this: HTMLElement) {
+        $(this).dialog("close");
+      }
+    },
+    position: { my: "center", at: "center", of: "svg" }
+  });
+}
+
+function addOwnerCores(): void {
+  const added = Provinces.addOwnerCores();
+  tip(added ? `Added ${added} cores` : "Every state already has cores on its provinces", false, "success");
+  refreshProvincesEditor();
 }
 
 function getCapitalOptions(burgs: number[], capital: number): string {
@@ -552,9 +658,7 @@ function removeProvince(p: number): void {
         unfog(`focusProvince${p}`);
         removeEmblem("province", p);
 
-        const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
-        g.select(`#province${p}`).remove();
-        g.select(`#province-gap${p}`).remove();
+        Layers.draw("provinces");
         Layers.draw("borders");
         Layers.draw("labels");
         refreshProvincesEditor();
@@ -620,6 +724,7 @@ function renderNameEditor(): void {
         <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11em; height: 1.645em">
           <option value="">blank</option>
           <option value="Area">Area</option>
+          <option value="Autonomous Republic">Autonomous Republic</option>
           <option value="Autonomy">Autonomy</option>
           <option value="Barony">Barony</option>
           <option value="Canton">Canton</option>
@@ -638,12 +743,15 @@ function renderNameEditor(): void {
           <option value="Governorate">Governorate</option>
           <option value="Island">Island</option>
           <option value="Islands">Islands</option>
+          <option value="Krai">Krai</option>
           <option value="Land">Land</option>
           <option value="Landgrave">Landgrave</option>
           <option value="Mandate">Mandate</option>
           <option value="Margrave">Margrave</option>
           <option value="Municipality">Municipality</option>
+          <option value="Oblast">Oblast</option>
           <option value="Occupation zone">Occupation zone</option>
+          <option value="Okrug">Okrug</option>
           <option value="Parish">Parish</option>
           <option value="Prefecture">Prefecture</option>
           <option value="Province">Province</option>
@@ -1078,11 +1186,13 @@ function recolorProvinces(): void {
 function downloadProvincesData(): void {
   const unit =
     options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
-  let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
+  let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs,Controller,Cores,Claims\n`; // headers
 
+  const stateNames = (ids?: number[]) => (ids ?? []).map(id => pack.states[id]?.name).join("; ");
   for (const province of getProvincesData()) {
     const capital = province.burg ? pack.burgs[province.burg].name : "";
-    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * options.map.units.population.scale)},${Math.round(province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},${province.burgs!.length}\n`;
+    const controller = pack.states[Provinces.getController(province)]?.name ?? "";
+    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * options.map.units.population.scale)},${Math.round(province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},${province.burgs!.length},${controller},${stateNames(province.cores)},${stateNames(province.claims)}\n`;
   }
 
   const name = `${getFileName("Provinces")}.csv`;
@@ -1112,7 +1222,7 @@ function removeAllProvinces(): void {
 
         unfog();
         Layers.draw("borders");
-        select<SVGGElement, unknown>("#provs").select("#provincesBody").remove();
+        ensureEl("provs").innerHTML = "";
         Layers.hide("provinces");
         Layers.draw("labels");
 

@@ -102,7 +102,9 @@ export const STATE_FORMS = {
   Republic: [
     "Chancellery",
     "City-state",
+    "Democratic Republic",
     "Diarchy",
+    "Federal Republic",
     "Federation",
     "Free City",
     "Junta",
@@ -147,7 +149,17 @@ export const STATE_FORMS = {
     "Thearchy",
     "Theocracy"
   ],
-  Anarchy: ["Commune", "Community", "Council", "Free Territory", "Tribes"]
+  Anarchy: ["Commune", "Community", "Council", "Free Territory", "Tribes"],
+  Socialist: [
+    "Commissariat",
+    "People's Democratic Republic",
+    "People's Republic",
+    "Socialist Federation",
+    "Socialist Republic",
+    "Soviet Republic",
+    "Soviet Union",
+    "Workers' Republic"
+  ]
 } as const satisfies Record<string, readonly string[]>;
 export type StateForm = keyof typeof STATE_FORMS;
 const FORMS = Object.keys(STATE_FORMS) as StateForm[];
@@ -163,7 +175,8 @@ const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
   Theocracy: { salesTax: 0.25, pollTax: 0.1 },
   Union: { salesTax: 0.07, pollTax: 0.13 },
   Republic: { salesTax: 0.05, pollTax: 0.15 },
-  Anarchy: { salesTax: 0, pollTax: 0 }
+  Anarchy: { salesTax: 0, pollTax: 0 },
+  Socialist: { salesTax: 0.3, pollTax: 0.05 }
 };
 const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
 
@@ -934,7 +947,9 @@ class StatesModule {
       "Triumvirate",
       "Diarchy",
       "Horde",
-      "Marches"
+      "Marches",
+      "Soviet Union",
+      "Socialist Federation"
     ];
     if (!state.formName) return state.name;
     if (!state.name && state.formName) return `The ${state.formName}`;
@@ -1135,6 +1150,7 @@ class StatesModule {
     for (const other of pack.states)
       if (other.i && !other.removed && other.neighbors) other.neighbors = other.neighbors.filter(n => n !== stateId);
     pack.states[stateId] = { i: stateId, removed: true } as State;
+    Provinces.updateClaims();
     this.collectStatistics();
   }
 
@@ -1175,6 +1191,7 @@ class StatesModule {
     pack.cells.state.forEach((owner, cell) => {
       if (ids.has(owner)) pack.cells.state[cell] = rulingStateId;
     });
+    Provinces.updateClaims(new Map([...ids].map(id => [id, rulingStateId])));
     this.findNeighbors();
     this.collectStatistics();
     this.getPoles();
@@ -1288,6 +1305,7 @@ class StatesModule {
     this.getPoles();
     this.findNeighbors();
     this.adjustProvinces([...affectedProvinces]);
+    Provinces.updateClaims();
     this.collectStatistics();
   }
 

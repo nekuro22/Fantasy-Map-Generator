@@ -4,7 +4,7 @@ import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
 import { replaceWholeWord } from "@/utils/languageUtils";
-import { requireName } from "@/utils/validationUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
 import type { Label } from "./labels-generator";
 import { Population } from "./population-generator";
@@ -12,6 +12,9 @@ import { Population } from "./population-generator";
 declare global {
   var Provinces: ProvinceModule;
 }
+
+export const CLAIM_KINDS = ["core", "claim", "none"] as const;
+export type ClaimKind = (typeof CLAIM_KINDS)[number];
 
 export interface Province {
   i: number;
@@ -27,6 +30,9 @@ export interface Province {
   coa: Emblem;
   pole?: [number, number];
   label?: Label;
+  cores?: number[];
+  claims?: number[];
+  controller?: number;
   // statistics computed by the provinces editor
   area?: number;
   rural?: number;
@@ -65,6 +71,7 @@ class ProvinceModule {
       Council: 1
     },
     Anarchy: { Council: 1, Commune: 1, Community: 1, Tribe: 1 },
+    Socialist: { Oblast: 6, District: 2, Krai: 2, "Autonomous Republic": 1, Okrug: 1, Commune: 1 },
     Wild: {
       Territory: 10,
       Land: 5,
@@ -392,6 +399,7 @@ class ProvinceModule {
     if (from?.provinces) from.provinces = from.provinces.filter(id => id !== provinceId);
     to.provinces = [...(to.provinces ?? []), provinceId];
     province.state = stateId;
+    if (province.controller === stateId) delete province.controller;
     States.findNeighbors();
     States.collectStatistics();
     States.getPoles();
@@ -518,6 +526,75 @@ class ProvinceModule {
     this.getPoles();
   }
 
+  /** Set a state's claim on a province, as in Hearts of Iron: "core" (land it sees as its own), "claim" or "none" */
+  setClaim(provinceId: number, stateId: number, kind: string): void {
+    const province = this.living(provinceId);
+    this.requireState(stateId);
+    requireOneOf(kind, CLAIM_KINDS, "The claim");
+    province.cores = (province.cores ?? []).filter(id => id !== stateId);
+    province.claims = (province.claims ?? []).filter(id => id !== stateId);
+    if (kind === "core") province.cores.push(stateId);
+    if (kind === "claim") province.claims.push(stateId);
+    tidyClaims(province);
+  }
+
+  /** A state's claim on a province: "core", "claim" or "none" */
+  getClaim(provinceId: number, stateId: number): ClaimKind {
+    const province = pack.provinces[provinceId];
+    if (province?.cores?.includes(stateId)) return "core";
+    if (province?.claims?.includes(stateId)) return "claim";
+    return "none";
+  }
+
+  /** Let a state occupy a province; its owner or 0 ends the occupation */
+  setController(provinceId: number, stateId: number): void {
+    const province = this.living(provinceId);
+    if (!stateId || stateId === province.state) {
+      delete province.controller;
+      return;
+    }
+    this.requireState(stateId);
+    province.controller = stateId;
+  }
+
+  /** The state holding a province: its occupier if it is occupied, otherwise its owner */
+  getController(province: Province): number {
+    return province.controller || province.state;
+  }
+
+  /** Give each state a core on every province it owns. Returns the number of cores added */
+  addOwnerCores(): number {
+    let added = 0;
+    for (const province of pack.provinces) {
+      if (!province?.i || province.removed || !province.state || province.cores?.includes(province.state)) continue;
+      this.setClaim(province.i, province.state, "core");
+      added++;
+    }
+    return added;
+  }
+
+  /** Point claims and occupations of absorbed states at their successor and drop those of states that are gone */
+  updateClaims(successors: ReadonlyMap<number, number> = new Map()): void {
+    const valid = (id: number) => {
+      const stateId = successors.get(id) ?? id;
+      return pack.states[stateId] && !pack.states[stateId].removed && stateId ? stateId : 0;
+    };
+    for (const province of pack.provinces ?? []) {
+      if (!province?.i || province.removed) continue;
+      if (province.cores) province.cores = [...new Set(province.cores.map(valid).filter(Boolean))];
+      if (province.claims)
+        province.claims = [...new Set(province.claims.map(valid))].filter(id => id && !province.cores?.includes(id));
+      if (province.controller) province.controller = valid(province.controller);
+      if (province.controller === province.state) delete province.controller;
+      tidyClaims(province);
+    }
+  }
+
+  private requireState(stateId: number): void {
+    const state = pack.states[stateId];
+    if (!stateId || !state || state.removed) throw new Error(`State ${stateId} does not exist`);
+  }
+
   private living(provinceId: number): Province {
     const province = pack.provinces[provinceId];
     if (!provinceId || !province || province.removed) throw new Error(`Province ${provinceId} does not exist`);
@@ -534,6 +611,12 @@ class ProvinceModule {
       province.pole = poles[province.i] || [0, 0];
     });
   }
+}
+
+function tidyClaims(province: Province): void {
+  if (!province.cores?.length) delete province.cores;
+  if (!province.claims?.length) delete province.claims;
+  if (!province.controller) delete province.controller;
 }
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam

@@ -237,6 +237,7 @@ describe("StatesModule.setCells", () => {
   beforeEach(async () => {
     vi.restoreAllMocks();
     await import("./states-generator");
+    await import("./provinces-generator");
   });
 
   afterEach(() => vi.restoreAllMocks());

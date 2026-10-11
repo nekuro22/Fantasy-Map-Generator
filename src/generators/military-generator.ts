@@ -46,6 +46,11 @@ interface Platoon {
   children?: Platoon[]; // merged platoons
 }
 
+// unions and socialist states recruit across cultures; theocracies lean on the faith, socialist states ignore it
+const isMultinational = (state: State) => state.form === "Union" || state.form === "Socialist";
+const religionPenalty = (state: State, value: number) =>
+  value / (state.form === "Theocracy" ? 2.2 : state.form === "Socialist" ? 1.1 : 1.4);
+
 class MilitaryModule {
   regenerate(): void {
     this.generate();
@@ -265,9 +270,8 @@ class MilitaryModule {
       if (!state || stateObj.removed) continue;
 
       let modifier = cells.pop[i] / 100; // basic rural army in percentages
-      if (culture !== stateObj.culture) modifier = stateObj.form === "Union" ? modifier / 1.2 : modifier / 2; // non-dominant culture
-      if (religion !== cells.religion[stateObj.center])
-        modifier = stateObj.form === "Theocracy" ? modifier / 2.2 : modifier / 1.4; // non-dominant religion
+      if (culture !== stateObj.culture) modifier = isMultinational(stateObj) ? modifier / 1.2 : modifier / 2; // non-dominant culture
+      if (religion !== cells.religion[stateObj.center]) modifier = religionPenalty(stateObj, modifier); // non-dominant religion
       if (cells.f[i] !== cells.f[stateObj.center])
         modifier = stateObj.type === "Naval" ? modifier / 1.2 : modifier / 1.8; // different landmass
       const type = getType(i);
@@ -324,8 +328,8 @@ class MilitaryModule {
       const stateObj = states[state];
       let m = (b.population * options.map.units.population.urbanization.rate) / 100; // basic urban army in percentages
       if (b.capital) m *= 1.2; // capital has household troops
-      if (culture !== stateObj.culture) m = stateObj.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
-      if (religion !== cells.religion[stateObj.center]) m = stateObj.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
+      if (culture !== stateObj.culture) m = isMultinational(stateObj) ? m / 1.2 : m / 2; // non-dominant culture
+      if (religion !== cells.religion[stateObj.center]) m = religionPenalty(stateObj, m); // non-dominant religion
       if (cells.f[b.cell] !== cells.f[stateObj.center]) m = stateObj.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
       const type = getType(b.cell);
 

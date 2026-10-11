@@ -26,6 +26,7 @@ Rates are seeded from `state.form` at state form assignment (in `States.defineSt
 | Union | 0.07 | 0.13 |
 | Republic | 0.05 | 0.15 |
 | Anarchy | 0.00 | 0.00 |
+| Socialist | 0.30 | 0.05 |
 
 Anarchy collapses to exactly 0. Neutrals (state 0) always have rates 0 and treasury 0.
 

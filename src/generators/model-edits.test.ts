@@ -118,6 +118,18 @@ describe("state forms", () => {
     expect("formName" in pack.states[1]).toBe(false);
     expect(() => States.setForm(1, "Realm", "Tyranny")).toThrow("The form must be one of");
   });
+
+  it("knows socialist and federal form names and builds their full names", () => {
+    vi.stubGlobal("pack", { states: [{ i: 0 }, { i: 1, name: "Orwin", form: "Monarchy" }] });
+    States.setForm(1, "People's Republic");
+    expect(pack.states[1]).toMatchObject({ form: "Socialist", fullName: "People's Republic of Orwin" });
+    States.setForm(1, "Federal Republic");
+    expect(pack.states[1]).toMatchObject({ form: "Republic", fullName: "Federal Republic of Orwin" });
+    States.setForm(1, "Soviet Union");
+    expect(pack.states[1]).toMatchObject({ form: "Socialist", formName: "Soviet Union" });
+    expect(pack.states[1].fullName).toMatch(/ Soviet Union$/);
+    expect(States.defineTaxRates(pack.states[1]).salesTax).toBeGreaterThan(0.15);
+  });
 });
 
 describe("population", () => {
@@ -312,6 +324,31 @@ describe("States", () => {
     expect(pack.burgs[1]).toMatchObject({ state: 0, capital: 0 });
   });
 
+  it("remove drops the removed state's claims and occupations", () => {
+    pack.states.push({ i: 3, name: "Lotan" } as (typeof pack.states)[number]);
+    Object.assign(pack.provinces, [
+      { i: 0 },
+      { i: 1, state: 1 },
+      { i: 2, state: 3, cores: [3, 2], claims: [1], controller: 2 }
+    ]);
+    States.remove(2);
+    expect(pack.provinces[2]).toEqual({ i: 2, state: 3, cores: [3], claims: [1] });
+  });
+
+  it("merge hands claims and occupations of merged states to the ruling one", () => {
+    pack.states.push({ i: 3, name: "Lotan" } as (typeof pack.states)[number]);
+    pack.provinces.push({
+      i: 2,
+      state: 3,
+      cores: [3, 1],
+      claims: [2],
+      controller: 1
+    } as (typeof pack.provinces)[number]);
+    States.merge(2, [1]);
+    expect(pack.provinces[2]).toMatchObject({ cores: [3, 2], controller: 2 });
+    expect(pack.provinces[2].claims).toBeUndefined();
+  });
+
   it("merge hands lands, burgs, provinces and regiments to the ruling state", () => {
     States.merge(2, [1]);
     expect(pack.states[1].removed).toBe(true);
@@ -346,6 +383,35 @@ describe("Provinces", () => {
     expect(pack.states[2].provinces).toEqual([1]);
     pack.cells.province[3] = 1;
     expect(() => Provinces.setState(1, 1)).toThrow("holds the capital");
+  });
+
+  it("sets cores, claims and occupation like Hearts of Iron", () => {
+    Provinces.setClaim(1, 2, "claim");
+    Provinces.setClaim(1, 1, "core");
+    expect(pack.provinces[1]).toMatchObject({ cores: [1], claims: [2] });
+    expect(Provinces.getClaim(1, 2)).toBe("claim");
+    Provinces.setClaim(1, 2, "core");
+    expect(pack.provinces[1]).toMatchObject({ cores: [1, 2] });
+    expect(pack.provinces[1].claims).toBeUndefined();
+    Provinces.setClaim(1, 2, "none");
+    expect(Provinces.getClaim(1, 2)).toBe("none");
+    expect(() => Provinces.setClaim(1, 2, "dream")).toThrow("The claim must be one of");
+    expect(() => Provinces.setClaim(1, 0, "core")).toThrow("State 0 does not exist");
+
+    Provinces.setController(1, 2);
+    expect(Provinces.getController(pack.provinces[1])).toBe(2);
+    Provinces.setController(1, 1);
+    expect("controller" in pack.provinces[1]).toBe(false);
+    Provinces.setController(1, 2);
+    Provinces.setState(1, 2); // the occupier annexes it
+    expect("controller" in pack.provinces[1]).toBe(false);
+  });
+
+  it("gives each state a core on the provinces it owns", () => {
+    pack.provinces.push({ i: 2, state: 2, cores: [2] } as (typeof pack.provinces)[number]);
+    expect(Provinces.addOwnerCores()).toBe(1);
+    expect(pack.provinces[1].cores).toEqual([1]);
+    expect(pack.provinces[2].cores).toEqual([2]);
   });
 
   it("setForm rebuilds the full name, setCapital takes a burg inside, remove frees the cells", () => {
