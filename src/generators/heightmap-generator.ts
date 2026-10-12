@@ -2,6 +2,8 @@ import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
 import type { MapData } from "@/components/options-schema";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
+import { getCoordinatesBox, getGlobeView } from "@/generators/coordinates";
 import type { GridGraph } from "@/types/GridGraph";
 import { getNumberInRange, lim, minmax, P, rand } from "../utils";
 
@@ -9,7 +11,18 @@ declare global {
   var HeightmapGenerator: HeightmapModule;
 }
 
-type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
+type Tool =
+  | "Hill"
+  | "Pit"
+  | "Range"
+  | "Trough"
+  | "Channel"
+  | "Strait"
+  | "Mask"
+  | "Invert"
+  | "Add"
+  | "Multiply"
+  | "Smooth";
 
 class HeightmapModule {
   grid: any = null;
@@ -39,7 +52,10 @@ class HeightmapModule {
       70000: 0.9955,
       80000: 0.996,
       90000: 0.9964,
-      100000: 0.9973
+      100000: 0.9973,
+      150000: 0.9981,
+      200000: 0.9985,
+      300000: 0.999
     };
     return blobPowerMap[cells] || 0.98;
   }
@@ -58,7 +74,10 @@ class HeightmapModule {
       70000: 0.88,
       80000: 0.91,
       90000: 0.92,
-      100000: 0.93
+      100000: 0.93,
+      150000: 0.94,
+      200000: 0.95,
+      300000: 0.96
     };
 
     return linePowerMap[cells] || 0.81;
@@ -383,6 +402,21 @@ class HeightmapModule {
     }
   }
 
+  /** Sea channel from the start to the end of the ranges, e.g. x 33-33 y 0-100 cuts the map top to bottom at a third */
+  addChannel(count: string, depth: string, rangeX: string, rangeY: string): void {
+    if (!this.heights || !this.grid) return;
+    const bounds = (range: string) => range.split("-").map(v => (parseFloat(v) || 0) / 100);
+    const jitter = () => (Math.random() - 0.5) * 0.04;
+    const [x1, x2 = x1] = bounds(rangeX);
+    const [y1, y2 = y1] = bounds(rangeY);
+    const desired = getNumberInRange(count);
+    for (let i = 0; i < desired; i++) {
+      const at = (x: number, y: number) =>
+        Grid.findCell(minmax(x + jitter(), 0, 1) * this.width, minmax(y + jitter(), 0, 1) * this.height, this.grid!);
+      this.addTrough("1", depth, "", "", at(x1, y1), at(x2, y2), 0.35);
+    }
+  }
+
   addStrait(width: string, direction = "vertical"): void {
     if (!this.heights || !this.grid) return;
     const desiredWidth = Math.min(getNumberInRange(width), this.grid.cellsX / 3);
@@ -522,6 +556,10 @@ class HeightmapModule {
       this.addTrough(a2, a3, a4, a5);
       return;
     }
+    if (tool === "Channel") {
+      this.addChannel(a2, a3, a4, a5);
+      return;
+    }
     if (tool === "Strait") {
       this.addStrait(a2, a3);
       return;
@@ -610,7 +648,23 @@ class HeightmapModule {
       img.onload = () => {
         if (!ctx) return fail("Could not get canvas context");
         this.heights = this.heights || new Uint8Array(cellsX * cellsY);
-        ctx.drawImage(img, 0, 0, cellsX, cellsY);
+        if (precreatedHeightmaps[id]?.globe) {
+          // the part of the globe the map coordinates will cover, at the canvas proportions
+          const { width, height } = config;
+          const requested = options.generation.geography;
+          const [size, latitude, longitude] = getGlobeView(width, height);
+          const box = getCoordinatesBox(
+            requested.mapSize ?? size,
+            requested.latitude ?? latitude,
+            requested.longitude ?? longitude,
+            width,
+            height
+          );
+          const [x0, x1] = [((box.lonW + 180) / 360) * img.width, ((box.lonE + 180) / 360) * img.width];
+          const [y0, y1] = [((90 - box.latN) / 180) * img.height, ((90 - box.latS) / 180) * img.height];
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, x0, y0, x1 - x0, y1 - y0, 0, 0, cellsX, cellsY);
+        } else ctx.drawImage(img, 0, 0, cellsX, cellsY);
         const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
         this.setGraph(graph, config);
         this.getHeightsFromImageData(imageData.data);
@@ -618,7 +672,7 @@ class HeightmapModule {
         img.remove();
         resolve(this.heights);
       };
-      img.src = `./heightmaps/${id}.png`;
+      img.src = `./heightmaps/${precreatedHeightmaps[id]?.image ?? id}.png`;
     });
   }
 

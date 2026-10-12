@@ -1,0 +1,37 @@
+[
+ {
+  "id": "2026",
+  "label": "Earth 2026",
+  "source": "Natural Earth 1:50m admin-0 countries and populated places (public domain)"
+ },
+ {
+  "id": "1945",
+  "label": "Earth 1945",
+  "source": "aourednik/historical-basemaps (GPL-3.0), https://github.com/aourednik/historical-basemaps"
+ },
+ {
+  "id": "1938",
+  "label": "Earth 1938",
+  "source": "aourednik/historical-basemaps (GPL-3.0), https://github.com/aourednik/historical-basemaps"
+ },
+ {
+  "id": "1930",
+  "label": "Earth 1930",
+  "source": "aourednik/historical-basemaps (GPL-3.0), https://github.com/aourednik/historical-basemaps"
+ },
+ {
+  "id": "1914",
+  "label": "Earth 1914",
+  "source": "aourednik/historical-basemaps (GPL-3.0), https://github.com/aourednik/historical-basemaps"
+ },
+ {
+  "id": "1200",
+  "label": "Earth 1200 (Middle Ages)",
+  "source": "aourednik/historical-basemaps (GPL-3.0), https://github.com/aourednik/historical-basemaps"
+ },
+ {
+  "id": "100",
+  "label": "Earth 100 AD (Antiquity)",
+  "source": "aourednik/historical-basemaps (GPL-3.0), https://github.com/aourednik/historical-basemaps"
+ }
+]

@@ -148,6 +148,36 @@ const fractious = `Hill 12-15 50-80 5-95 5-95
   Add -20 30-100 0 0
   Range 6-8 40-50 5-95 10-90`;
 
+// several continents split by sea channels; best on big maps
+const manyContinents = `Hill 1 80-90 45-55 40-60
+  Hill 8-10 30-40 8-92 12-88
+  Multiply 0.85 land 0 0
+  Add -2 all 0 0
+  Range 4-6 25-40 8-92 15-85
+  Smooth 2 0 0 0
+  Channel 6 80-90 31-35 0-100
+  Channel 6 80-90 65-69 0-100
+  Channel 4 75-85 0-33 50-47
+  Channel 4 75-85 67-100 47-53
+  Channel 3 70-80 34-66 53-49
+  Hill 6-9 12-18 5-95 5-95
+  Add -4 0-19 0 0
+  Pit 3-5 10-15 10-90 10-90
+  Mask 4 0 0 0`;
+
+const fourContinents = `Hill 1 80-90 45-55 40-60
+  Hill 8-10 30-40 8-92 12-88
+  Multiply 0.85 land 0 0
+  Add -2 all 0 0
+  Range 4-6 25-40 8-92 15-85
+  Smooth 2 0 0 0
+  Channel 7 85-95 48-52 0-100
+  Channel 6 80-90 0-100 48-52
+  Hill 4-6 12-18 5-95 5-95
+  Add -4 0-19 0 0
+  Pit 3-4 10-15 10-90 10-90
+  Mask 4 0 0 0`;
+
 export type HeightmapTemplate = {
   id: number;
   name: string;
@@ -169,7 +199,10 @@ export const heightmapTemplates: Record<string, HeightmapTemplate> = {
   shattered: { id: 10, name: "Shattered", template: shattered, probability: 7 },
   taklamakan: { id: 11, name: "Taklamakan", template: taklamakan, probability: 1 },
   oldWorld: { id: 12, name: "Old World", template: oldWorld, probability: 8 },
-  fractious: { id: 13, name: "Fractious", template: fractious, probability: 3 }
+  fractious: { id: 13, name: "Fractious", template: fractious, probability: 3 },
+  // never picked at random, so existing seeds keep their maps
+  manyContinents: { id: 14, name: "Many Continents", template: manyContinents, probability: 0 },
+  fourContinents: { id: 15, name: "Four Continents", template: fourContinents, probability: 0 }
 };
 
 declare global {

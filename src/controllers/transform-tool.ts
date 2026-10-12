@@ -59,7 +59,7 @@ function renderDialog(): void {
     >
       <div>Points number</div>
       <div>
-        <input id="transformPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
+        <input id="transformPointsInput" type="range" min="1" max="16" value="${pointsValue}" />
         <output id="transformPointsFormatted" style="color: ${cellsDensityColor(cells)}">${cells / 1000}K</output>
       </div>
       <div>Shift</div>

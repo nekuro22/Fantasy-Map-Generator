@@ -55,7 +55,34 @@ die Geschichte des Staates oder der Provinz schreibst — am besten ein Ereignis
 `1268 – Revolution, die Monarchie fällt`. Wird eine Provinz unabhängig, nimmt der neue Staat ihre Geschichte mit;
 werden Provinzen zusammengelegt, bleiben alle Einträge erhalten.
 
-### 4. `fmg` — Kommandozeilen-Tool, auch für KI-Agenten
+### 4. Die echte Erde – heute und in der Geschichte
+
+Unter *Heightmap auswählen → Precreated heightmaps* gibt es eine genaue Weltkarte und sieben Fassungen mit echten
+Ländergrenzen:
+
+| Vorlage | Inhalt |
+| --- | --- |
+| **Earth (accurate)** | echte Höhen und Meerestiefen (ETOPO1) und Küsten (Natural Earth 1:10 Mio.), Staaten wie gewohnt erfunden |
+| **Earth 2026** | heutige Länder mit deutschen Namen, echten Hauptstädten (Berlin, Paris …) und Regierungsformen |
+| **Earth 1945 / 1938 / 1930 / 1914** | Grenzen dieser Jahre; Kolonien sind Provinzen ihrer Kolonialmacht (ohne Kernanspruch) |
+| **Earth 1200** (Mittelalter), **Earth 100 AD** (Antike) | Reiche und Völker dieser Zeit; staatenlose Völker als „Anarchie“ |
+
+- Die Karte zeigt so viel vom Globus, wie das Seitenverhältnis erlaubt, ohne zu verzerren — bei **2:1**
+  (z. B. 2000 × 1000) die ganze Erde. Maßstab, Koordinaten, Höhen und das Kalenderjahr stimmen.
+- Für 1936, 1942 und 1946 gibt es keine eigenen Grenzdaten; am nächsten liegen 1930, 1938 und 1945.
+- Städte außer den Hauptstädten, Kulturen und Religionen erzeugt der Generator weiterhin selbst.
+- Quellen und Lizenzen: [public/scenarios/README.md](public/scenarios/README.md). Die historischen Grenzen stammen aus
+  [historical-basemaps](https://github.com/aourednik/historical-basemaps) (GPL-3.0) und stehen deshalb ebenfalls unter GPL-3.0.
+
+### 5. Größere Welten mit mehreren Kontinenten
+
+- **Punkte-Regler bis 300.000 Zellen** (vorher 100.000) — mehr Platz für viele Länder. Große Werte brauchen spürbar
+  länger und mehr Arbeitsspeicher.
+- Neue Vorlagen **Many Continents** (meist 4–6 Kontinente) und **Four Continents** (meist 3–5), getrennt durch Meere.
+- Neues Vorlagen-Werkzeug **Channel** (C im Vorlagen-Editor): zieht eine Meeresstraße von Start- zu Endpunkt der
+  X- und Y-Bereiche, z. B. `Channel 4 80-90 33-33 0-100` trennt die Karte bei einem Drittel von oben nach unten.
+
+### 6. `fmg` — Kommandozeilen-Tool, auch für KI-Agenten
 
 In [`tools/fmg-cli`](tools/fmg-cli): Karten abfragen, gezielt bearbeiten, zwei Kartenstände vergleichen und in
 GeoJSON/CSV umwandeln — direkt aus `.map`-Dateien und JSON-Exporten, ohne Browser. Mit
@@ -106,8 +133,10 @@ fmg --help
 
 - **Fantasy Map Generator:** © 2017–2024 Max Haniyeu (Azgaar), [MIT-Lizenz](LICENSE). Der Lizenz- und Urheberhinweis
   des Originals bleibt in [LICENSE](LICENSE) unverändert erhalten.
-- **Änderungen in diesem Fork** (Staatsform „Socialist“, Ansprüche/Besatzung, Geschichte, `tools/fmg-cli`): © 2026 Niklas,
-  ebenfalls unter der MIT-Lizenz. Das Tool enthält einen Nachbau des Voronoi-Aufbaus aus dem Original (siehe
+- **Änderungen in diesem Fork** (Staatsform „Socialist“, Ansprüche/Besatzung, Geschichte, Erdkarte, Kontinent-Vorlagen,
+  `tools/fmg-cli`): © 2026 Niklas,
+  ebenfalls unter der MIT-Lizenz — außer den historischen Grenzdaten in `public/scenarios` (GPL-3.0, siehe dort).
+  Das Tool enthält einen Nachbau des Voronoi-Aufbaus aus dem Original (siehe
   [tools/fmg-cli/LICENSE](tools/fmg-cli/LICENSE)).
 - Die Änderungen wurden mit Unterstützung von Claude (Anthropic) geschrieben.
 

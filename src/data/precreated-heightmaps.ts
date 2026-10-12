@@ -3,6 +3,12 @@
 export type PrecreatedHeightmap = {
   id: number;
   name: string;
+  /** the image is the whole globe in equirectangular projection: the map shows the part its coordinates cover */
+  globe?: boolean;
+  /** image in public/heightmaps to use instead of <key>.png */
+  image?: string;
+  /** real-world borders from public/scenarios/<scenario>.json replace the generated states */
+  scenario?: string;
 };
 
 export const precreatedHeightmaps: Record<string, PrecreatedHeightmap> = {
@@ -28,7 +34,15 @@ export const precreatedHeightmaps: Record<string, PrecreatedHeightmap> = {
   "us-centric": { id: 19, name: "US-centric" },
   "us-mainland": { id: 20, name: "US Mainland" },
   world: { id: 21, name: "World" },
-  "world-from-pacific": { id: 22, name: "World from Pacific" }
+  "world-from-pacific": { id: 22, name: "World from Pacific" },
+  earth: { id: 23, name: "Earth (accurate)", globe: true },
+  "earth-2026": { id: 24, name: "Earth 2026 (borders)", globe: true, image: "earth", scenario: "2026" },
+  "earth-1945": { id: 25, name: "Earth 1945 (borders)", globe: true, image: "earth", scenario: "1945" },
+  "earth-1938": { id: 26, name: "Earth 1938 (borders)", globe: true, image: "earth", scenario: "1938" },
+  "earth-1930": { id: 27, name: "Earth 1930 (borders)", globe: true, image: "earth", scenario: "1930" },
+  "earth-1914": { id: 28, name: "Earth 1914 (borders)", globe: true, image: "earth", scenario: "1914" },
+  "earth-1200": { id: 29, name: "Earth 1200 – Middle Ages (borders)", globe: true, image: "earth", scenario: "1200" },
+  "earth-100": { id: 30, name: "Earth 100 AD – Antiquity (borders)", globe: true, image: "earth", scenario: "100" }
 };
 
 declare global {

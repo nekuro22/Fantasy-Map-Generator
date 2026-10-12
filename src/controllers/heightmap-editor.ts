@@ -96,6 +96,8 @@ function renderTemplateEditor(): void {
           <option value="taklamakan">Taklamakan</option>
           <option value="oldWorld">Old World</option>
           <option value="fractious">Fractious</option>
+          <option value="manyContinents">Many Continents</option>
+          <option value="fourContinents">Four Continents</option>
         </select>
       </div>
       <div id="templateTools">
@@ -103,6 +105,7 @@ function renderTemplateEditor(): void {
         <button data-type="Pit" data-tip="Pit: round depression">P</button>
         <button data-type="Range" data-tip="Range: elongated elevation">R</button>
         <button data-type="Trough" data-tip="Trough: elongated depression">T</button>
+        <button data-type="Channel" data-tip="Channel: sea channel from the start to the end of the X and Y ranges">C</button>
         <button data-type="Strait" data-tip="Strait: centered vertical or horizontal depression">S</button>
         <button data-type="Mask" data-tip="Mask: lower cells near edges or in map center">M</button>
         <button data-type="Invert" data-tip="Invert heightmap along the axes">I</button>
@@ -1570,7 +1573,7 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
       } />
     </span>`;
 
-  if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough") {
+  if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough" || type === "Channel") {
     return /* html */ `${common}${TempY}${TempX}${Height}${Count}</div>`;
   }
 
@@ -1749,7 +1752,8 @@ function executeTemplate(): void {
     else if (type === "Range") HeightmapGenerator.addRange(count, height, x, y);
     else if (type === "Trough") {
       HeightmapGenerator.addTrough(count, height, x, y);
-    } else if (type === "Strait") HeightmapGenerator.addStrait(count, dist);
+    } else if (type === "Channel") HeightmapGenerator.addChannel(count, height, x, y);
+    else if (type === "Strait") HeightmapGenerator.addStrait(count, dist);
     else if (type === "Mask") HeightmapGenerator.mask(+count);
     else if (type === "Invert") HeightmapGenerator.invert(+count, dist);
     else if (type === "Add") HeightmapGenerator.modify(dist, +count, 1);

@@ -48,7 +48,7 @@ function renderDialog(): void {
       <div data-tip="Set points (cells) number of the submap" style="display: flex; gap: 1em">
         <div>Points number</div>
         <div>
-          <input id="submapPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
+          <input id="submapPointsInput" type="range" min="1" max="16" value="${pointsValue}" />
           <output id="submapPointsFormatted" style="color: ${cellsDensityColor(cells)}">${cells / 1000}K</output>
         </div>
       </div>

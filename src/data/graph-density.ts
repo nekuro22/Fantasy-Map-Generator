@@ -13,7 +13,11 @@ export const POINTS_BY_DENSITY: Record<number, number> = {
   10: 70000,
   11: 80000,
   12: 90000,
-  13: 100000
+  13: 100000,
+  // big worlds: slow to generate and draw, best with several continents
+  14: 150000,
+  15: 200000,
+  16: 300000
 };
 
 export const DENSITY_STEPS = Object.keys(POINTS_BY_DENSITY).map(Number);

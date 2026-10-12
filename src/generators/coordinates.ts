@@ -1,4 +1,6 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
+import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
+import { getKmInDistanceUnit } from "@/utils/unitUtils";
 import { gauss, P, rn } from "../utils";
 
 declare global {
@@ -37,6 +39,8 @@ const TEMPLATE_POSITIONS: Record<string, SizeAndPosition> = {
 // chance for a random template to cover the whole world, if the land does not go over the map borders
 const WHOLE_WORLD_CHANCE: Record<string, number> = {
   pangea: 1,
+  manyContinents: 0.8,
+  fourContinents: 0.8,
   shattered: 0.7,
   continents: 0.5,
   archipelago: 0.35,
@@ -54,6 +58,22 @@ const RANDOM_SIZE: Record<string, [number, number, number, number]> = {
   atoll: [3, 2, 1, 5]
 };
 
+/** Size and position that show as much of the globe as the canvas allows without distortion */
+export function getGlobeView(width: number, height: number): SizeAndPosition {
+  return [Math.min(100, 200 / (width / height)), 50, 50];
+}
+
+/** The lat/lon box a size and position cover on a canvas */
+export function getCoordinatesBox(size: number, latitude: number, longitude: number, width: number, height: number) {
+  const latT = rn((size / 100) * 180, 1);
+  const latN = rn(90 - (180 - latT) * (latitude / 100), 1);
+  const latS = rn(latN - latT, 1);
+  const lonT = rn(Math.min((width / height) * latT, 360), 1);
+  const lonE = rn(180 - (360 - lonT) * (longitude / 100), 1);
+  const lonW = rn(lonE - lonT, 1);
+  return { latT, latN, latS, lonT, lonW, lonE };
+}
+
 class CoordinatesModule {
   generate(): void {
     const partial = grid.features.some(feature => feature.land && feature.border);
@@ -64,26 +84,26 @@ class CoordinatesModule {
     geography.latitude = requested.latitude ?? latitude;
     geography.longitude = requested.longitude ?? longitude;
     this.calculate();
+    if (precreatedHeightmaps[options.generation.template]?.globe) this.setEarthScale();
+  }
+
+  /** Distance scale of the real Earth: a meridian from pole to pole is 20 004 km */
+  private setEarthScale(): void {
+    const kmInUnit = getKmInDistanceUnit();
+    if (!kmInUnit) return; // a custom unit has no real-world length
+    const meridianPixels = (options.map.graph.height * 100) / options.map.geography.mapSize;
+    options.map.units.distance.scale = rn(20004 / meridianPixels / kmInUnit, 2);
   }
 
   /** calculate the map lat/lon box from its size and position */
   calculate(): void {
-    const sizeFraction = options.map.geography.mapSize / 100;
-    const latShift = options.map.geography.latitude / 100;
-    const lonShift = options.map.geography.longitude / 100;
-
-    const latT = rn(sizeFraction * 180, 1);
-    const latN = rn(90 - (180 - latT) * latShift, 1);
-    const latS = rn(latN - latT, 1);
-
-    const lonT = rn(Math.min((options.map.graph.width / options.map.graph.height) * latT, 360), 1);
-    const lonE = rn(180 - (360 - lonT) * lonShift, 1);
-    const lonW = rn(lonE - lonT, 1);
-
-    options.map.geography.coordinates = { latT, latN, latS, lonT, lonW, lonE };
+    const { mapSize, latitude, longitude } = options.map.geography;
+    const { width, height } = options.map.graph;
+    options.map.geography.coordinates = getCoordinatesBox(mapSize, latitude, longitude, width, height);
   }
 
   private getSizeAndPosition(template: string, isPartial: boolean): SizeAndPosition {
+    if (precreatedHeightmaps[template]?.globe) return getGlobeView(options.map.graph.width, options.map.graph.height);
     const realWorldPosition = TEMPLATE_POSITIONS[template];
     if (realWorldPosition) return realWorldPosition;
 

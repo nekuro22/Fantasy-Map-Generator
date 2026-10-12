@@ -2,6 +2,7 @@
 import { GraphOverride } from "@/generators/graph-override";
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import { Population } from "@/generators/population-generator";
+import { Scenarios } from "@/generators/scenarios";
 import type { GridGraph } from "@/types/GridGraph";
 import { Coordinates } from "./coordinates";
 
@@ -28,13 +29,15 @@ const generationPipelineSteps = [
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
   { id: "burgs", run: () => Burgs.generate() },
-  { id: "states", run: () => States.generate() },
+  { id: "states", run: async () => ((await Scenarios.prepare()) ? Scenarios.createStates() : States.generate()) },
   { id: "routes", run: () => Routes.generate() },
   { id: "religions", run: () => Religions.generate() },
   { id: "burgsSpecify", run: () => Burgs.specify() },
   { id: "stateStatistics", run: () => States.collectStatistics() },
   { id: "stateForms", run: () => States.defineStateForms() },
+  { id: "scenarioForms", run: () => Scenarios.applyForms() },
   { id: "provinces", run: () => Provinces.generate() },
+  { id: "scenarioColonies", run: () => Scenarios.applyColonies() },
   { id: "provincePoles", run: () => Provinces.getPoles() },
   { id: "riversSpecify", run: () => Rivers.specify() },
   { id: "featureNames", run: () => Features.defineNames() },

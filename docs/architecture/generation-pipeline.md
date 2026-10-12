@@ -69,9 +69,9 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | Climate art              | `ice`                                                         | `pack.ice`                                                                      |
 | Goods catalogue          | `goods`                                                       | `pack.goods` (map-independent), `cells.good`                                    |
 | Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`                     | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
-| Settlement & politics    | `burgs`, `states`, `routes`, `religions`                      | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`                    |
-| Specification            | `burgsSpecify`, `stateStatistics`, `stateForms`               | burg types, state stats and forms                                               |
-| Provinces                | `provinces`, `provincePoles`                                  | `pack.provinces`                                                                |
+| Settlement & politics    | `burgs`, `states`, `routes`, `religions`                      | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`; an Earth preset with borders loads its scenario and takes states from it (`Scenarios`) |
+| Specification            | `burgsSpecify`, `stateStatistics`, `stateForms`, `scenarioForms` | burg types, state stats and forms; real names and governments of a border scenario |
+| Provinces                | `provinces`, `scenarioColonies`, `provincePoles`              | `pack.provinces`; colonies of a border scenario become provinces                |
 | Naming polish            | `riversSpecify`, `featureNames`                               | river and feature (island, ocean, lake) names                                   |
 | Economy                  | `markets`, `production`, `taxes`                              | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
 | Overlays                 | `military`, `markers`, `zones`, `addedLabels`                 | regiments, markers, zones, labels                                               |
