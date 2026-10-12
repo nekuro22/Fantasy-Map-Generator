@@ -63,7 +63,7 @@ Details in der [README des Tools](tools/fmg-cli/README.md).
 Du brauchst [Git](https://git-scm.com) und [Node.js](https://nodejs.org) 18 oder neuer.
 
 ```sh
-git clone <URL dieses Repos>
+git clone https://github.com/nekuro22/Fantasy-Map-Generator.git
 cd Fantasy-Map-Generator
 npm install
 npm run dev          # dann http://localhost:5173/Fantasy-Map-Generator/ öffnen
