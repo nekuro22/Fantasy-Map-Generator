@@ -1,55 +1,102 @@
-# Fantasy Map Generator
+# Fantasy Map Generator — Fork mit sozialistischen Staatsformen, Gebietsansprüchen und KI-Tool
 
-Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.
+> **Original:** Dies ist ein Fork von **[Azgaar's Fantasy Map Generator](https://github.com/Azgaar/Fantasy-Map-Generator)**
+> von **Max Haniyeu (Azgaar)** und allen [Mitwirkenden des Originalprojekts](https://github.com/Azgaar/Fantasy-Map-Generator/graphs/contributors).
+> Der Generator selbst — Kartenerzeugung, Editoren, Darstellung und fast der gesamte Code hier — stammt von ihnen.
+> Die Online-Version des Originals: [azgaar.github.io/Fantasy-Map-Generator](https://azgaar.github.io/Fantasy-Map-Generator).
+> Wer das Projekt unterstützen möchte, kann das über Azgaars [Patreon](https://www.patreon.com/azgaar) tun.
+>
+> Dieser Fork ist kein offizieller Teil des Originalprojekts und wird nicht von Azgaar betreut.
+> Er basiert auf dem Original-Stand vom 11.10.2026 (Commit `b069bcb`, Version 1.154.0).
+> Die ursprüngliche README steht in [README.original.md](README.original.md).
 
-Link: [azgaar.github.io/Fantasy-Map-Generator](https://azgaar.github.io/Fantasy-Map-Generator).
+## Was dieser Fork hinzufügt
 
-Refer to the [project wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki) for guidance. Development is tracked on the [FMG dev board](https://github.com/users/Azgaar/projects/3). Some details are covered in my old blog [_Fantasy Maps for fun and glory_](https://azgaar.wordpress.com).
+### 1. Staatsform „Socialist“
 
-[![preview](https://github.com/Azgaar/Fantasy-Map-Generator/assets/26469650/9502eae9-92e0-4d0d-9f17-a2ba4a565c01)](https://github.com/Azgaar/Fantasy-Map-Generator/assets/26469650/11a42446-4bd5-4526-9cb1-3ef97c868992)
+Eine neue Regierungsart neben Monarchie, Republik, Union, Theokratie und Anarchie:
 
-[![preview](https://github.com/Azgaar/Fantasy-Map-Generator/assets/26469650/e751a9e5-7986-4638-b8a9-362395ef7583)](https://github.com/Azgaar/Fantasy-Map-Generator/assets/26469650/e751a9e5-7986-4638-b8a9-362395ef7583)
+- **Formnamen:** People's Republic, People's Democratic Republic, Socialist Republic, Soviet Republic,
+  Soviet Union, Socialist Federation, Workers' Republic, Commissariat
+- **Eigene Regeln:** Steuern (hohe Verkaufs-, niedrige Kopfsteuer), Provinzformen (Oblast, Krai, Okrug,
+  Autonomous Republic …) und Rekrutierung (Minderheiten werden wie in einer Union eingezogen, Religion zählt weniger)
+- Zusätzlich bei den Republiken: **Federal Republic** (Bundesrepublik) und **Democratic Republic**
 
-[![preview](https://github.com/Azgaar/Fantasy-Map-Generator/assets/26469650/b0d0efde-a0d1-4e80-8818-ea3dd83c2323)](https://github.com/Azgaar/Fantasy-Map-Generator/assets/26469650/b0d0efde-a0d1-4e80-8818-ea3dd83c2323)
+Der Generator würfelt diese Form nie selbst aus — bestehende Seeds erzeugen also exakt dieselben Karten wie im Original.
+Du stellst sie im Staaten-Editor ein: *Tools → States → auf den Staatsnamen klicken → Form name*.
 
-Join our [Discord server](https://discordapp.com/invite/X7E84HU) and [Reddit community](https://www.reddit.com/r/FantasyMapGenerator) to share your creations, discuss the Generator, suggest ideas and get the most recent updates.
+### 2. Kern- und Gebietsansprüche wie in Hearts of Iron
 
-Report bugs with the [bug report form](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml), suggest features in [Ideas discussions](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/ideas), and ask usage questions in [Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/discussions/categories/q-a). Search existing reports first. For bugs, include your FMG version, browser/OS, reproduction steps and an affected `.map` file in a ZIP archive when relevant. For ideas, explain the problem and your use case.
+Jede Provinz kann jetzt speichern,
+- welche Staaten einen **Kernanspruch** (Core) haben — Land, das sie als ihr eigenes ansehen,
+- welche Staaten einen einfachen **Anspruch** (Claim) erheben,
+- und ob sie von einem anderen Staat **besetzt** ist (Controller).
 
-In Discord, use `#fmg-bugs` or `#fmg-suggestions`; the assistant's `/bug` and `/idea` commands, when available, open forms for moderator review before GitHub submission. Asking the assistant a question does not file a report. See [reporting instructions and examples](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas).
+Im Provinz-Editor (*Tools → Provinces*):
+- Spalte **Controller:** einen anderen Staat wählen, um die Provinz als besetzt zu markieren.
+  Besetzte Provinzen werden auf der Ebene „Provinces“ in der Farbe des Besatzers schraffiert.
+- Spalte **Claims:** Klick auf das Fahnen-Symbol öffnet einen Dialog, in dem du für jeden Staat Core, Claim oder nichts setzt.
+- **Schild-Knopf** unten: gibt jedem Staat einen Kernanspruch auf alle Provinzen, die er besitzt.
+- Der CSV-Export der Provinzen enthält Controller, Cores und Claims.
 
-Contact me via [email](mailto:azgaar.fmg@yandex.com) for non-public suggestions. For performance problems, first check the [performance tips](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#the-map-performance-is-poor-how-can-i-improve-it).
+Ansprüche bleiben sauber: Wird ein Staat gelöscht, verschwinden seine Ansprüche; wird er in einen anderen
+eingegliedert, gehen sie auf diesen über; übernimmt der Besatzer die Provinz, endet die Besatzung.
 
-You can support the project on [Patreon](https://www.patreon.com/azgaar).
+### 3. `fmg` — Kommandozeilen-Tool, auch für KI-Agenten
 
-_Inspiration:_
-
-- Martin O'Leary's [_Generating fantasy maps_](https://mewo2.com/notes/terrain)
-
-- Amit Patel's [_Polygonal Map Generation for Games_](http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation)
-
-- Scott Turner's [_Here Dragons Abound_](https://heredragonsabound.blogspot.com)
-
-## Desktop app
-
-Installers for Linux, Windows and macOS are attached to each
-[release](https://github.com/Azgaar/Fantasy-Map-Generator/releases). Nix users can build
-the same app from the flake instead — see [Install with Nix](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Install-with-Nix):
+In [`tools/fmg-cli`](tools/fmg-cli): Karten abfragen, gezielt bearbeiten, zwei Kartenstände vergleichen und in
+GeoJSON/CSV umwandeln — direkt aus `.map`-Dateien und JSON-Exporten, ohne Browser. Mit
+[`AGENTS.md`](tools/fmg-cli/AGENTS.md) als Anleitung für KI-Agenten (Claude Code, Codex …).
 
 ```sh
-nix run github:Azgaar/Fantasy-Map-Generator
+fmg list Aurelia.map states --sort population --desc --limit 10
+fmg set Aurelia.map state Mingia formName="People's Republic" -o Aurelia-2.map
+fmg occupy Aurelia.map Ostmark Boignia -o Aurelia-2.map
+fmg diff Aurelia_alt.json Aurelia_neu.json
+fmg convert Aurelia.map --csv
 ```
 
-## Contribution
+Details in der [README des Tools](tools/fmg-cli/README.md).
 
-Pull requests are highly welcomed. The codebase is messy and I will appreciate if you start with minor changes. Check out the [data model](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-model) before contributing.
+## Benutzung
 
-The codebase is gradually transitioning from **vanilla JavaScript to TypeScript** while maintaining compatibility with the existing generation pipeline and old `.map` user files.
+Du brauchst [Git](https://git-scm.com) und [Node.js](https://nodejs.org) 18 oder neuer.
 
-The expected **future** architecture is based on a separation between **world data**, **procedural generation**, **interactive editing**, and **rendering**. The application is conceptually divided into four main layers: world data and styles (state), generators (model), editors (controllers), renderers (view).
+```sh
+git clone <URL dieses Repos>
+cd Fantasy-Map-Generator
+npm install
+npm run dev          # dann http://localhost:5173/Fantasy-Map-Generator/ öffnen
+npm run electron     # oder als Desktop-App
+```
 
-Flow:
-settings → generators → world data → renderer
-UI → editors → world data → renderer.
+Karten lädst du wie gewohnt über das Menü (► oben links) als `.map`-Datei.
 
-The data layer must contain no logic and no rendering code. Generators implement the procedural world simulation. Editors implement interactive editing tools used by the user. They perform controlled mutations of the world state. Editors can be viewed as interactive generators. The renderer converts the world state into SVG or WebGl graphics. Renderer must be pure visualization step and not modify world data.
+Kommandozeilen-Tool:
+
+```sh
+cd tools/fmg-cli
+npm install
+npm install -g .     # danach überall als fmg verfügbar
+fmg --help
+```
+
+## Kompatibilität mit dem Original
+
+- Karten aus dem Original lassen sich hier ohne Änderung öffnen.
+- Karten aus diesem Fork lassen sich im Original öffnen. Das Original behält die neuen Werte in der Datei,
+  zeigt Ansprüche und Besatzungen aber nicht an und behandelt die Staatsform „Socialist“ wie eine Monarchie.
+- Das Dateiformat ist unverändert; neu sind nur die optionalen Provinzfelder `cores`, `claims` und `controller`
+  (beschrieben in [docs/architecture/data-model.md](docs/architecture/data-model.md)).
+
+## Lizenz und Urheber
+
+- **Fantasy Map Generator:** © 2017–2024 Max Haniyeu (Azgaar), [MIT-Lizenz](LICENSE). Der Lizenz- und Urheberhinweis
+  des Originals bleibt in [LICENSE](LICENSE) unverändert erhalten.
+- **Änderungen in diesem Fork** (Staatsform „Socialist“, Ansprüche/Besatzung, `tools/fmg-cli`): © 2026 Niklas,
+  ebenfalls unter der MIT-Lizenz. Das Tool enthält einen Nachbau des Voronoi-Aufbaus aus dem Original (siehe
+  [tools/fmg-cli/LICENSE](tools/fmg-cli/LICENSE)).
+- Die Änderungen wurden mit Unterstützung von Claude (Anthropic) geschrieben.
+
+Fehler im Generator selbst, die nicht mit den Änderungen dieses Forks zu tun haben, meldest du am besten
+[beim Original](https://github.com/Azgaar/Fantasy-Map-Generator/issues).
