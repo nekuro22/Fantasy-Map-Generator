@@ -206,6 +206,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0, Socialist 0.3), jittered per state. Always `0` for neutrals
 - `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0, Socialist 0.05), jittered per state. Always `0` for neutrals
 - `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `pollTax × (rural + urban)`. Always `0` for neutrals
+- `history`: `string` - optional. Free-text history of the state, plain text
 - `lock`: `boolean` - `true` if state is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if state is removed
 - `note`: `string` - optional. The user's note (legend) about the state, as html. Removed with it
@@ -248,6 +249,8 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `cores`: `number[]` - optional. Ids of states holding a core on the province: land they see as their own, as in Hearts of Iron. The owner has no core unless listed
 - `claims`: `number[]` - optional. Ids of states claiming the province without a core. A state is never in both lists
 - `controller`: `number` - optional. Id of the state occupying the province; absent when the owner holds it. Occupied provinces are hatched in the occupier's color. Claims and occupations by removed states are dropped, those of merged states pass to the ruling state
+- Claims are assigned automatically: generation gives every owner a core on its provinces and derives occupation from the wars in the diplomacy (`Provinces.generateOccupation`, a seeded sequence of its own); a province changing hands keeps its cores, so the former owner still claims it; peace between two states ends their occupations; maps from before claims get owner cores on load
+- `history`: `string` - optional. Free-text history of the province, plain text
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed
 - `note`: `string` - optional. The user's note (legend) about the province, as html. Removed with it

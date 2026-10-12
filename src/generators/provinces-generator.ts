@@ -33,6 +33,7 @@ export interface Province {
   cores?: number[];
   claims?: number[];
   controller?: number;
+  history?: string;
   // statistics computed by the provinces editor
   area?: number;
   rural?: number;
@@ -337,6 +338,8 @@ class ProvinceModule {
 
     cells.province = provinceIds;
     pack.provinces = provinces;
+    this.addOwnerCores();
+    this.generateOccupation();
   }
 
   /** Rename a province; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
@@ -429,7 +432,18 @@ class ProvinceModule {
     );
     coa.shield = Emblems.getShield(culture, state);
     const color = getMixedColor(states[state].color!, 0.2, 0);
-    provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa });
+    provinces.push({
+      i,
+      state,
+      center,
+      burg,
+      name,
+      formName,
+      fullName: `${name} ${formName}`,
+      color,
+      coa,
+      cores: [state]
+    });
     states[state].provinces = [...(states[state].provinces ?? []), i];
 
     cells.province[center] = i;
@@ -453,7 +467,9 @@ class ProvinceModule {
     const owner = states[province.state];
     if (owner?.provinces) owner.provinces = owner.provinces.filter(id => id !== provinceId);
     pack.provinces[provinceId] = { i: provinceId, removed: true } as Province;
-    return States.found(province.name, province.burg, province.coa, provinceCells);
+    const stateId = States.found(province.name, province.burg, province.coa, provinceCells);
+    if (province.history) states[stateId].history = province.history;
+    return stateId;
   }
 
   /** Remove a province; its lands stay with the state */
@@ -478,6 +494,10 @@ class ProvinceModule {
 
     for (const province of merged) {
       if (!primary.burg && province.burg) primary.burg = province.burg;
+      if (province.history)
+        primary.history = [primary.history, `${province.fullName || province.name}:\n${province.history}`]
+          .filter(Boolean)
+          .join("\n\n");
       pack.provinces[province.i] = { i: province.i, removed: true } as Province;
     }
     pack.cells.province.forEach((owner, cell) => {
@@ -571,6 +591,71 @@ class ProvinceModule {
       added++;
     }
     return added;
+  }
+
+  /** Occupation from the wars in the diplomacy: the stronger side holds border provinces of the weaker one, the
+   * more so the bigger its lead; capitals stay with their owner. Replaces all occupations. Returns their number */
+  generateOccupation(): number {
+    const { states, provinces, cells, burgs } = pack;
+    const random = Alea(`${options.map.seed}-occupation`); // own sequence: the map's random stream stays untouched
+    for (const province of provinces) if (province?.i) delete province.controller;
+
+    const contact = new Map<number, Map<number, number>>(); // province → neighbor state → shared cell edges
+    for (const cell of cells.i) {
+      const province = cells.province[cell];
+      if (!province) continue;
+      for (const neighbor of cells.c[cell]) {
+        const state = cells.state[neighbor];
+        if (!state || state === cells.state[cell]) continue;
+        const byState = contact.get(province) ?? new Map<number, number>();
+        byState.set(state, (byState.get(state) ?? 0) + 1);
+        contact.set(province, byState);
+      }
+    }
+    const strength = (state: { rural?: number; urban?: number }) =>
+      Math.max((state.rural ?? 0) + (state.urban ?? 0), 1);
+    const capitalProvince = (state: { capital?: number }) =>
+      state.capital && burgs[state.capital] ? cells.province[burgs[state.capital].cell] : 0;
+    const occupy = (holder: number, owner: number, share: number, minimum: number) => {
+      const front = provinces
+        .filter(p => p?.i && !p.removed && p.state === owner && !p.controller && contact.get(p.i)?.get(holder))
+        .filter(p => p.i !== capitalProvince(states[owner]))
+        .sort((a, b) => contact.get(b.i)!.get(holder)! - contact.get(a.i)!.get(holder)!);
+      const count = Math.max(Math.round(front.length * share * (0.75 + random() * 0.5)), minimum);
+      for (const province of front.slice(0, count)) province.controller = holder;
+      return Math.min(count, front.length);
+    };
+
+    let occupied = 0;
+    const living = states.filter(s => s.i && !s.removed);
+    for (const a of living)
+      for (const b of living) {
+        if (a.i >= b.i || a.diplomacy?.[b.i] !== "Enemy") continue;
+        const [strong, weak] = strength(a) >= strength(b) ? [a, b] : [b, a];
+        const ratio = strength(strong) / strength(weak);
+        occupied += occupy(strong.i, weak.i, Math.min(Math.max((ratio - 1) / 3, 0.1), 0.6), 1);
+        if (ratio < 1.3) occupied += occupy(weak.i, strong.i, 0.1, random() < 0.5 ? 1 : 0); // an even war: both sides hold ground
+      }
+    return occupied;
+  }
+
+  /** End the occupations between two states, as at peace */
+  endOccupation(stateId: number, otherId: number): void {
+    for (const province of pack.provinces) {
+      if (!province?.i || province.removed) continue;
+      const between =
+        (province.state === stateId && province.controller === otherId) ||
+        (province.state === otherId && province.controller === stateId);
+      if (between) delete province.controller;
+    }
+  }
+
+  /** Set a province's history as free text; empty removes it */
+  setHistory(provinceId: number, text: string): void {
+    const province = this.living(provinceId);
+    if (typeof text !== "string") throw new Error("The history must be text");
+    if (text.trim()) province.history = text.replace(/\s+$/, "");
+    else delete province.history;
   }
 
   /** Point claims and occupations of absorbed states at their successor and drop those of states that are gone */

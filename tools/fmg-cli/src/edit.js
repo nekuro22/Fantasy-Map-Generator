@@ -30,8 +30,8 @@ export const CLAIM_KINDS = ["core", "claim", "none"];
 
 /** Editable fields per type */
 export const FIELDS = {
-  states: ["name", "fullName", "formName", "form", "color", "note"],
-  provinces: ["name", "fullName", "formName", "color", "note"],
+  states: ["name", "fullName", "formName", "form", "color", "note", "history"],
+  provinces: ["name", "fullName", "formName", "color", "note", "history"],
   burgs: ["name", "population", "note"],
   cultures: ["name", "color", "note"],
   religions: ["name", "color", "deity", "note"],
@@ -124,6 +124,7 @@ export class Editor {
     };
 
     if (field === "note") return assign("note", toNote(String(value)) || undefined);
+    if (field === "history") return assign("history", String(value).replace(/\s+$/, "") || undefined);
     if (field === "color") return assign("color", requireColor(value));
     if (field === "deity") return assign("deity", String(value).trim() || null);
     if (field === "population") {

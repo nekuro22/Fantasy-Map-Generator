@@ -8,6 +8,7 @@ import {
   updateDialog
 } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { historyIcon, openHistoryDialog } from "@/components/dialog/history-dialog";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
 import {
@@ -108,6 +109,7 @@ const columns: EditorColumn<Province>[] = [
   },
   { key: "population", label: "Population", width: "6em", sortBy: getProvincePopulation },
   { key: "note", width: "1.1em" },
+  { key: "history", width: "1.1em" },
   { key: "independence", width: "1.1em" },
   { key: "locate", width: "1.1em" },
   { key: "focus", width: "1.1em" },
@@ -187,6 +189,11 @@ function renderDialog(): void {
         ></button>
         <button id="provincesMerge" data-tip="Merge several provinces into one" class="icon-layer-group"></button>
         <button
+          id="provincesOccupation"
+          data-tip="Occupation from the wars: the stronger side holds border provinces of its enemy. Replaces all occupations"
+          class="icon-button-bombardment"
+        ></button>
+        <button
           id="provincesOwnerCores"
           data-tip="Give every state a core on each province it owns"
           class="icon-shield-alt"
@@ -230,6 +237,7 @@ function renderDialog(): void {
   ensureEl("provincesAdd").addEventListener("click", enterAddProvinceMode);
   ensureEl("provincesMerge").addEventListener("click", openProvinceMergeDialog);
   ensureEl("provincesOwnerCores").addEventListener("click", addOwnerCores);
+  ensureEl("provincesOccupation").addEventListener("click", generateOccupation);
   ensureEl("provincesAnnex").addEventListener("click", provincesAnnex.toggle);
   ensureEl("provincesRecolor").addEventListener("click", recolorProvinces);
 
@@ -244,6 +252,7 @@ function renderDialog(): void {
 
     if (el.tagName === "FILL-BOX") changeFill(el as FillBoxElement);
     else if (cl.contains("provinceClaims")) editClaims(p);
+    else if (cl.contains("icon-history")) editProvinceHistory(p);
     else if (cl.contains("name")) editProvinceName(p);
     else if (cl.contains("coaIcon"))
       void Controllers.EmblemsEditor.open("province", `provinceCOA${p}`, pack.provinces[p]);
@@ -377,6 +386,7 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
       ${noteIcon("this province")}
+      ${historyIcon("this province", !!p.history)}
       <span data-col="independence" data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span>
       <span data-col="locate" data-tip="Locate the province" class="icon-target"></span>
       <span data-col="focus" data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
@@ -473,6 +483,32 @@ function editClaims(provinceId: number): void {
       }
     },
     position: { my: "center", at: "center", of: "svg" }
+  });
+}
+
+function editProvinceHistory(provinceId: number): void {
+  const province = pack.provinces[provinceId];
+  openHistoryDialog({
+    title: `History of ${province.fullName || province.name}`,
+    text: province.history,
+    onSave: text => {
+      Provinces.setHistory(provinceId, text);
+      refreshProvincesEditor();
+    }
+  });
+}
+
+function generateOccupation(): void {
+  confirmationDialog({
+    title: "Occupation from wars",
+    message: "Replace all occupations with the front lines of the current wars? Manual occupations are lost",
+    confirm: "Generate",
+    onConfirm: () => {
+      const count = Provinces.generateOccupation();
+      tip(count ? `${count} provinces occupied` : "No province is occupied: no state is at war", false, "success");
+      Layers.draw("provinces");
+      refreshProvincesEditor();
+    }
   });
 }
 

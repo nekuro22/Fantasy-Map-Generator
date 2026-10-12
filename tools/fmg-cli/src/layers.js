@@ -150,6 +150,7 @@ function states(ctx) {
     cells: s.cells,
     neighbors: Array.isArray(s.neighbors) ? s.neighbors.filter(n => alive(list[n])).map(n => list[n].name).join(", ") : undefined,
     diplomacy: relations(s),
+    history: s.history,
     note: stripHtml(s.note)
   }));
 }
@@ -174,6 +175,7 @@ function provinces(ctx) {
       claims: names(p.claims).join(", ") || undefined,
       capital: nameOf(burgList, p.burg),
       population: population(ctx, p.rural, p.urban),
+      history: p.history,
       note: stripHtml(p.note)
     };
   });

@@ -58,6 +58,7 @@ export interface State {
   form?: string;
   military?: Regiment[];
   provinces?: number[];
+  history?: string;
   temp?: any;
   alert?: number;
   salesTax: number;
@@ -989,6 +990,14 @@ class StatesModule {
     state.fullName = this.getFullName(state);
   }
 
+  /** Set a state's history as free text; empty removes it */
+  setHistory(stateId: number, text: string): void {
+    const state = this.ruled(stateId);
+    if (typeof text !== "string") throw new Error("The history must be text");
+    if (text.trim()) state.history = text.replace(/\s+$/, "");
+    else delete state.history;
+  }
+
   /** Set a state's dominant culture */
   setCulture(stateId: number, cultureId: number): void {
     const culture = pack.cultures[cultureId];
@@ -1018,6 +1027,7 @@ class StatesModule {
     object.diplomacy ??= [];
     subject.diplomacy[otherId] = relation;
     object.diplomacy[stateId] = getInverseRelation(relation); // an unchanged relation still repairs its inverse
+    if (old === "Enemy" && relation !== "Enemy") Provinces.endOccupation(stateId, otherId);
     if (old === relation) return;
     this.getChronicle().push(this.getRelationRecord(stateId, otherId, old, relation));
   }
@@ -1220,7 +1230,9 @@ class StatesModule {
       formName,
       fullName: `${state.name} ${formName}`,
       color: getMixedColor(state.color!),
-      coa: state.coa
+      coa: state.coa,
+      cores: [state.i],
+      ...(state.history ? { history: state.history } : {})
     } as Province);
     ruling.provinces ??= [];
     ruling.provinces.push(provinceId);
@@ -1358,7 +1370,8 @@ class StatesModule {
         formName,
         fullName: `${name} ${formName}`,
         color: getMixedColor(states[stateId].color!),
-        coa
+        coa,
+        cores: old.cores?.length ? [...old.cores] : [old.state]
       } as Province);
       for (const cell of provinceCells) cells.province[cell] = id;
       states[stateId].provinces = [...(states[stateId].provinces ?? []), id];

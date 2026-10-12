@@ -39,10 +39,23 @@ Im Provinz-Editor (*Tools → Provinces*):
 - **Schild-Knopf** unten: gibt jedem Staat einen Kernanspruch auf alle Provinzen, die er besitzt.
 - Der CSV-Export der Provinzen enthält Controller, Cores und Claims.
 
-Ansprüche bleiben sauber: Wird ein Staat gelöscht, verschwinden seine Ansprüche; wird er in einen anderen
-eingegliedert, gehen sie auf diesen über; übernimmt der Besatzer die Provinz, endet die Besatzung.
+**Alles wird automatisch vergeben:**
+- Jede neue Karte gibt jedem Staat einen Kernanspruch auf seine Provinzen; ältere Karten bekommen ihn beim Laden.
+- Aus den Kriegen der Diplomatie entstehen Besatzungen: Die stärkere Seite hält Grenzprovinzen des Gegners —
+  je größer ihr Vorsprung, desto mehr; Hauptstädte bleiben beim Besitzer. Der Knopf mit dem Geschütz im
+  Provinz-Editor berechnet die Fronten neu.
+- Wechselt eine Provinz den Besitzer, behält sie ihre Kernansprüche — der frühere Besitzer beansprucht sie also weiter.
+- Friedensschluss (Beziehung weg von „Enemy“) beendet die Besatzungen zwischen den beiden Staaten.
+- Wird ein Staat gelöscht, verschwinden seine Ansprüche; wird er eingegliedert, gehen sie auf den neuen Herrn über.
 
-### 3. `fmg` — Kommandozeilen-Tool, auch für KI-Agenten
+### 3. Geschichte pro Staat und Provinz
+
+Im Staaten- und im Provinz-Editor gibt es pro Zeile ein Uhr-Symbol. Es öffnet ein Fenster, in das du einfach
+die Geschichte des Staates oder der Provinz schreibst — am besten ein Ereignis pro Zeile, z. B.
+`1268 – Revolution, die Monarchie fällt`. Wird eine Provinz unabhängig, nimmt der neue Staat ihre Geschichte mit;
+werden Provinzen zusammengelegt, bleiben alle Einträge erhalten.
+
+### 4. `fmg` — Kommandozeilen-Tool, auch für KI-Agenten
 
 In [`tools/fmg-cli`](tools/fmg-cli): Karten abfragen, gezielt bearbeiten, zwei Kartenstände vergleichen und in
 GeoJSON/CSV umwandeln — direkt aus `.map`-Dateien und JSON-Exporten, ohne Browser. Mit
@@ -86,14 +99,14 @@ fmg --help
 - Karten aus dem Original lassen sich hier ohne Änderung öffnen.
 - Karten aus diesem Fork lassen sich im Original öffnen. Das Original behält die neuen Werte in der Datei,
   zeigt Ansprüche und Besatzungen aber nicht an und behandelt die Staatsform „Socialist“ wie eine Monarchie.
-- Das Dateiformat ist unverändert; neu sind nur die optionalen Provinzfelder `cores`, `claims` und `controller`
+- Das Dateiformat ist unverändert; neu sind nur die optionalen Felder `cores`, `claims`, `controller` und `history`
   (beschrieben in [docs/architecture/data-model.md](docs/architecture/data-model.md)).
 
 ## Lizenz und Urheber
 
 - **Fantasy Map Generator:** © 2017–2024 Max Haniyeu (Azgaar), [MIT-Lizenz](LICENSE). Der Lizenz- und Urheberhinweis
   des Originals bleibt in [LICENSE](LICENSE) unverändert erhalten.
-- **Änderungen in diesem Fork** (Staatsform „Socialist“, Ansprüche/Besatzung, `tools/fmg-cli`): © 2026 Niklas,
+- **Änderungen in diesem Fork** (Staatsform „Socialist“, Ansprüche/Besatzung, Geschichte, `tools/fmg-cli`): © 2026 Niklas,
   ebenfalls unter der MIT-Lizenz. Das Tool enthält einen Nachbau des Voronoi-Aufbaus aus dem Original (siehe
   [tools/fmg-cli/LICENSE](tools/fmg-cli/LICENSE)).
 - Die Änderungen wurden mit Unterstützung von Claude (Anthropic) geschrieben.

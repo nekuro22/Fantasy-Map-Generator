@@ -84,7 +84,8 @@ export const METHODS = {
     "setLocked",
     "setChronicleEntry",
     "setCells",
-    "setPopulation"
+    "setPopulation",
+    "setHistory"
   ],
   Provinces: [
     "rename",
@@ -102,7 +103,9 @@ export const METHODS = {
     "setCells",
     "setClaim",
     "setController",
-    "addOwnerCores"
+    "addOwnerCores",
+    "generateOccupation",
+    "setHistory"
   ],
   Cultures: [
     "rename",

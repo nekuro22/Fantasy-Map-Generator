@@ -306,6 +306,17 @@ describe("States", () => {
       vi.spyOn(States, method).mockImplementation(() => {});
   });
 
+  it("peace ends the occupations between two states; history is free text", () => {
+    pack.states[1].diplomacy = ["x", "x", "Enemy"];
+    pack.states[2].diplomacy = ["x", "Enemy", "x"];
+    Object.assign(pack.provinces[1], { controller: 2 });
+    States.setRelation(1, 2, "Neutral");
+    expect("controller" in pack.provinces[1]).toBe(false);
+    States.setHistory(2, "Founded by nomads");
+    expect(pack.states[2].history).toBe("Founded by nomads");
+    expect(() => States.setHistory(0, "x")).toThrow();
+  });
+
   it("setRelation sets both sides and records the change", () => {
     States.setRelation(2, 1, "Vassal");
     expect(pack.states[2].diplomacy![1]).toBe("Vassal");
@@ -405,6 +416,14 @@ describe("Provinces", () => {
     Provinces.setController(1, 2);
     Provinces.setState(1, 2); // the occupier annexes it
     expect("controller" in pack.provinces[1]).toBe(false);
+  });
+
+  it("writes and clears a province's history", () => {
+    Provinces.setHistory(1, "1268 – Revolution\n1270 – Peace  \n");
+    expect(pack.provinces[1].history).toBe("1268 – Revolution\n1270 – Peace");
+    Provinces.setHistory(1, "  ");
+    expect("history" in pack.provinces[1]).toBe(false);
+    expect(() => Provinces.setHistory(1, 5 as unknown as string)).toThrow("must be text");
   });
 
   it("gives each state a core on the provinces it owns", () => {

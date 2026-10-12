@@ -8,6 +8,7 @@ import {
   updateDialog
 } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { historyIcon, openHistoryDialog } from "@/components/dialog/history-dialog";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -126,6 +127,7 @@ const columns: EditorColumn<State>[] = [
     sortBy: s => (s.i ? s.expansionism || 0 : 0)
   },
   { key: "note", width: "1.1em" },
+  { key: "history", width: "1.1em" },
   { key: "locate", width: "1.1em" },
   { key: "focus", width: "1.1em" },
   { key: "lock", width: "1.1em" },
@@ -245,6 +247,7 @@ function renderDialog(): void {
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
     else if (classList.contains("icon-book")) void Controllers.NotesEditor.open({ type: "state", id: stateId });
+    else if (classList.contains("icon-history")) editStateHistory(stateId);
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-target"))
       highlightElement(select("#regions").select(`#state${stateId}`).node() as Element, 4);
@@ -359,6 +362,7 @@ function renderStatesPage(view: TableView<State>): void {
           <input class="statePower placeholder" type="number" value="0" />
         </div>
         <div data-col="note"></div>
+        <div data-col="history"></div>
         <div data-col="locate"></div>
         <div data-col="focus"></div>
         <div data-col="lock"></div>
@@ -424,6 +428,7 @@ function renderStatesPage(view: TableView<State>): void {
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
       ${noteIcon("this state")}
+      ${historyIcon("this state", !!s.history)}
       <span data-col="locate" data-tip="Locate the state" class="icon-target"></span>
       <span data-col="focus" data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
       <span data-col="lock" data-tip="Lock the state to protect it from re-generation" class="icon-lock${
@@ -1344,3 +1349,15 @@ function updateLockStatus(stateId: number, classList: DOMTokenList): void {
 }
 
 export const StatesEditor = { open, showChart: showStatesChart };
+
+function editStateHistory(stateId: number): void {
+  const state = pack.states[stateId];
+  openHistoryDialog({
+    title: `History of ${state.fullName || state.name}`,
+    text: state.history,
+    onSave: text => {
+      States.setHistory(stateId, text);
+      refreshStatesEditor();
+    }
+  });
+}

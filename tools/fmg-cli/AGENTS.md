@@ -40,6 +40,7 @@ Before writing, `fmg` reparses the result and refuses to write a map that would 
 fmg set world.map state Aurelia formName="People's Republic" -o world-2.map
 fmg set world.map state 7 name=Neuland fullName="Freistaat Neuland" note="Gegründet 1268" -o world-2.map
 fmg set world.map province Ostmark formName=Oblast color=#aa3300 -o world-2.map
+fmg set world.map state Aurelia history="1268 – Revolution\n1270 – Frieden von Grim" -o world-2.map   # plain-text history
 fmg set world.map burg Grim name=Neu-Grim population=250000 -o world-2.map
 fmg relation world.map Aurelia Mingia Enemy -o world-2.map   # sets both sides, logs the chronicle
 fmg relation world.map Taisa Aurelia Vassal -o world-2.map   # Taisa becomes a vassal of Aurelia
@@ -72,6 +73,8 @@ with an adjective ("Aurelian Empire") — set `fullName=` yourself if it reads w
 
 Borders, cells, capitals moving between states, new states or provinces, regeneration. These need the
 generator's own tools (e.g. the state/province paint brush). Say so and describe the steps instead.
+
+New maps get owner cores and war occupation automatically in the generator fork; `fmg` does not regenerate them.
 
 ### Fork-only data
 
