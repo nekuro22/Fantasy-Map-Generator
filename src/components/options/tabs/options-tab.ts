@@ -22,6 +22,7 @@ import { isAutoBurgLimit } from "@/generators/burgs-generator";
 import { CULTURE_SETS, Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
+import { getLanguage, LANGUAGES, type Language, setLanguage } from "@/services/i18n";
 import { copyMapURL } from "@/services/url-params";
 import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
@@ -602,6 +603,18 @@ const TEMPLATE = /* html */ `
         ></i>
       </td>
     </tr>
+    <tr data-tip="Language of the interface. Map names and your own texts stay as they are">
+      <td></td>
+      <td>Interface</td>
+      <td>
+        <select id="interfaceLanguage" class="notranslate">
+          ${Object.entries(LANGUAGES)
+            .map(([code, name]) => `<option value="${code}">${name}</option>`)
+            .join("")}
+        </select>
+      </td>
+      <td></td>
+    </tr>
     <tr
       data-tip="Load Google Translate and select a language. Automatic translation can break some page functions. If this happens, reset the language to English or refresh the page"
     >
@@ -654,6 +667,9 @@ function addListeners(): void {
   const root = ensureEl("options");
   root.addEventListener("input", onOptionInput);
   root.addEventListener("change", onOptionInput);
+  const languageSelect = ensureEl<HTMLSelectElement>("interfaceLanguage");
+  languageSelect.value = getLanguage();
+  languageSelect.addEventListener("change", () => setLanguage(languageSelect.value as Language));
 
   content.addEventListener("click", event => {
     const target = event.target as HTMLElement;

@@ -29,6 +29,7 @@ import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-embl
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
+import { translate } from "@/services/i18n";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, getPointer, getRandomColor, isLand, rand, rn, si, unique } from "../utils";
@@ -88,7 +89,7 @@ const columns: EditorColumn<Province>[] = [
   {
     key: "claims",
     label: "Claims",
-    width: "4.5em",
+    width: "6em",
     mobileHidden: true,
     sortBy: province => (province.cores?.length ?? 0) * 1000 + (province.claims?.length ?? 0)
   },
@@ -354,8 +355,9 @@ function renderProvincesPage(view: TableView<Province>): void {
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       const stateName = pack.states[p.state].name;
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
-      const stateNames = (ids?: number[]) => (ids ?? []).map(id => pack.states[id]?.name).join(", ") || "none";
-      const claimsTip = `Cores: ${stateNames(p.cores)}. Claims: ${stateNames(p.claims)}. Click to edit`;
+      const stateNames = (ids?: number[]) =>
+        (ids ?? []).map(id => pack.states[id]?.name).join(", ") || translate("none");
+      const claimsTip = `${translate("Cores")}: ${stateNames(p.cores)}. ${translate("Claims")}: ${stateNames(p.claims)}. ${translate("Click to edit")}`;
       const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusProvince${p.i}`).size();
       EmblemRenderer.trigger(`provinceCOA${p.i}`, p.coa);
       return /* html */ `<div class="states" data-id=${p.i}>
@@ -422,7 +424,7 @@ function getControllerOptions(province: Province): string {
     .filter(state => state.i && !state.removed)
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(state => {
-      const label = state.i === province.state ? `${state.name} (owner)` : state.name;
+      const label = state.i === province.state ? `${state.name} (${translate("owner")})` : state.name;
       return `<option value="${state.i}" ${state.i === controller ? "selected" : ""}>${label}</option>`;
     })
     .join("");
@@ -449,7 +451,7 @@ function editClaims(provinceId: number): void {
     );
   const rows = states
     .map(({ state, kind }) => {
-      const owner = state.i === province.state ? " (owner)" : "";
+      const owner = state.i === province.state ? ` (${translate("owner")})` : "";
       const options = CLAIM_KINDS.map(k => `<option value="${k}" ${k === kind ? "selected" : ""}>${label[k]}</option>`);
       return /* html */ `<div style="display: flex; justify-content: space-between; gap: 1em; padding: 1px 0">
         <span>${state.fullName || state.name}${owner}</span>
@@ -462,7 +464,7 @@ function editClaims(provinceId: number): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: `Claims on ${province.fullName || province.name}`,
+    title: `${translate("Claims on")} ${province.fullName || province.name}`,
     width: "26em",
     buttons: {
       Apply: function (this: HTMLElement) {
@@ -489,7 +491,7 @@ function editClaims(provinceId: number): void {
 function editProvinceHistory(provinceId: number): void {
   const province = pack.provinces[provinceId];
   openHistoryDialog({
-    title: `History of ${province.fullName || province.name}`,
+    title: `${translate("History")}: ${province.fullName || province.name}`,
     text: province.history,
     onSave: text => {
       Provinces.setHistory(provinceId, text);

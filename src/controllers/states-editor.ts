@@ -29,6 +29,7 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
+import { translate } from "@/services/i18n";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
@@ -1353,7 +1354,7 @@ export const StatesEditor = { open, showChart: showStatesChart };
 function editStateHistory(stateId: number): void {
   const state = pack.states[stateId];
   openHistoryDialog({
-    title: `History of ${state.fullName || state.name}`,
+    title: `${translate("History")}: ${state.fullName || state.name}`,
     text: state.history,
     onSave: text => {
       States.setHistory(stateId, text);

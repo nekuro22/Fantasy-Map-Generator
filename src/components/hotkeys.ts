@@ -2,6 +2,7 @@ import { hideOptions } from "@/components/options/options-panel";
 import { Controllers } from "@/controllers";
 import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
+import { translate } from "@/services/i18n";
 import { findEl, minmax } from "@/utils";
 import { showInfo } from "./app-info";
 import { closeDialogs } from "./dialog/dialog-helpers";
@@ -167,7 +168,7 @@ function removeElementOnKey(): void {
 
   visibleDialogs.forEach(dialog => {
     dialog.querySelectorAll("button").forEach(button => {
-      if (button.textContent === "Remove") button.click();
+      if (button.textContent === "Remove" || button.textContent === translate("Remove")) button.click();
     });
   });
 }

@@ -82,7 +82,17 @@ Ländergrenzen:
 - Neues Vorlagen-Werkzeug **Channel** (C im Vorlagen-Editor): zieht eine Meeresstraße von Start- zu Endpunkt der
   X- und Y-Bereiche, z. B. `Channel 4 80-90 33-33 0-100` trennt die Karte bei einem Drittel von oben nach unten.
 
-### 6. `fmg` — Kommandozeilen-Tool, auch für KI-Agenten
+### 6. Deutsche Oberfläche
+
+Unter *Optionen → Oberfläche* lässt sich die Sprache auf **Deutsch** stellen; die Wahl wird im Browser gespeichert.
+Übersetzt werden Menüs, Editoren, Dialoge, Hinweise und Meldungen (rund 3.000 Texte, in
+[`src/data/i18n/de.json`](src/data/i18n/de.json)). Kartennamen, Beschriftungen, Notizen und alles, was du selbst
+eingibst, bleiben unverändert. Zurück auf *English* stellt die Originaltexte sofort wieder her.
+
+Fehlt irgendwo eine Übersetzung, bleibt dort der englische Text stehen — Ergänzungen sind einfach ein weiterer
+Eintrag `"Englischer Text": "Deutscher Text"` in `de.json`; Zahlen schreibt man als `{n}`.
+
+### 7. `fmg` — Kommandozeilen-Tool, auch für KI-Agenten
 
 In [`tools/fmg-cli`](tools/fmg-cli): Karten abfragen, gezielt bearbeiten, zwei Kartenstände vergleichen und in
 GeoJSON/CSV umwandeln — direkt aus `.map`-Dateien und JSON-Exporten, ohne Browser. Mit
@@ -134,7 +144,7 @@ fmg --help
 - **Fantasy Map Generator:** © 2017–2024 Max Haniyeu (Azgaar), [MIT-Lizenz](LICENSE). Der Lizenz- und Urheberhinweis
   des Originals bleibt in [LICENSE](LICENSE) unverändert erhalten.
 - **Änderungen in diesem Fork** (Staatsform „Socialist“, Ansprüche/Besatzung, Geschichte, Erdkarte, Kontinent-Vorlagen,
-  `tools/fmg-cli`): © 2026 Niklas,
+  deutsche Übersetzung, `tools/fmg-cli`): © 2026 Niklas,
   ebenfalls unter der MIT-Lizenz — außer den historischen Grenzdaten in `public/scenarios` (GPL-3.0, siehe dort).
   Das Tool enthält einen Nachbau des Voronoi-Aufbaus aus dem Original (siehe
   [tools/fmg-cli/LICENSE](tools/fmg-cli/LICENSE)).

@@ -19,6 +19,7 @@ import { GenerationPipeline } from "@/generators/generation-pipeline";
 import { adoptLegacyIconSlots } from "@/generators/styles-legacy";
 import { stashCallbackToken } from "@/services/assistant/azgaar-server/auth";
 import { initiateAutosave } from "@/services/autosave";
+import { getLanguage, initLanguage } from "@/services/i18n";
 import { logStats } from "@/services/logging";
 import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
@@ -38,6 +39,9 @@ export async function boot(): Promise<void> {
   adoptLegacyIconSlots(options.map.military.units); // the unit types a browser kept from before v1.154.0
   syncOptionInputs();
   restoreUi();
+  initLanguage();
+  const languageSelect = findEl<HTMLSelectElement>("interfaceLanguage");
+  if (languageSelect) languageSelect.value = getLanguage();
   setViewportSize(options.map.graph.width, options.map.graph.height);
   applyDefaultViewboxEvents();
 
