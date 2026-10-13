@@ -4,6 +4,7 @@ import type { MapData } from "@/components/options-schema";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { getCoordinatesBox, getGlobeView } from "@/generators/coordinates";
+import { keepEarthPassages } from "@/generators/earth-passages";
 import type { GridGraph } from "@/types/GridGraph";
 import { getNumberInRange, lim, minmax, P, rand } from "../utils";
 
@@ -648,6 +649,7 @@ class HeightmapModule {
       img.onload = () => {
         if (!ctx) return fail("Could not get canvas context");
         this.heights = this.heights || new Uint8Array(cellsX * cellsY);
+        let globeBox: ReturnType<typeof getCoordinatesBox> | null = null;
         if (precreatedHeightmaps[id]?.globe) {
           // the part of the globe the map coordinates will cover, at the canvas proportions
           const { width, height } = config;
@@ -660,6 +662,7 @@ class HeightmapModule {
             width,
             height
           );
+          globeBox = box;
           const [x0, x1] = [((box.lonW + 180) / 360) * img.width, ((box.lonE + 180) / 360) * img.width];
           const [y0, y1] = [((90 - box.latN) / 180) * img.height, ((90 - box.latS) / 180) * img.height];
           ctx.imageSmoothingQuality = "high";
@@ -668,6 +671,7 @@ class HeightmapModule {
         const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
         this.setGraph(graph, config);
         this.getHeightsFromImageData(imageData.data);
+        if (globeBox && this.heights) keepEarthPassages(this.heights, cellsX, cellsY, globeBox);
         canvas.remove();
         img.remove();
         resolve(this.heights);

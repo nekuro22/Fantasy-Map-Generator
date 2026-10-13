@@ -24,6 +24,8 @@ export const DENSITY_STEPS = Object.keys(POINTS_BY_DENSITY).map(Number);
 export const MIN_DENSITY = Math.min(...DENSITY_STEPS);
 export const MAX_DENSITY = Math.max(...DENSITY_STEPS);
 export const DEFAULT_DENSITY = 4;
+/** 100K cells: the least that keeps the Earth presets' coasts and small countries recognisable */
+export const EARTH_MIN_DENSITY = 13;
 
 export function getPointsNumber(density: number): number {
   return POINTS_BY_DENSITY[density] ?? POINTS_BY_DENSITY[DEFAULT_DENSITY];

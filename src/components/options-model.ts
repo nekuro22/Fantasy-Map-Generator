@@ -10,8 +10,9 @@ import {
 } from "@/components/options-schema";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
-import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
+import { DEFAULT_DENSITY, EARTH_MIN_DENSITY, getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { Burgs } from "@/generators/burgs-generator";
@@ -235,6 +236,8 @@ class OptionsModel {
     generation.template = Pins.rolls("template")
       ? this.randomTemplate()
       : Pins.valueOr("template", generation.template);
+    // the Earth needs fine cells for its coasts, seas and small countries
+    if (precreatedHeightmaps[generation.template]?.globe) graph.density = Math.max(graph.density, EARTH_MIN_DENSITY);
     states.limit = Pins.rolls("statesNumber") ? gauss(18, 5, 2, 30) : Pins.valueOr("statesNumber", states.limit);
     provinces.ratio = Pins.rolls("provincesRatio")
       ? gauss(20, 10, 20, 100)

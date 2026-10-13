@@ -69,6 +69,9 @@ Ländergrenzen:
 
 - Die Karte zeigt so viel vom Globus, wie das Seitenverhältnis erlaubt, ohne zu verzerren — bei **2:1**
   (z. B. 2000 × 1000) die ganze Erde. Maßstab, Koordinaten, Höhen und das Kalenderjahr stimmen.
+- Die Erd-Presets nutzen immer mindestens **100.000 Zellen**, sonst verschwimmen Küsten und kleine Länder.
+  Meerengen wie Gibraltar, Bosporus, Kertsch, Øresund, Bab al-Mandab, Hormus, Malakka und Bering bleiben offen,
+  Panama und Suez bleiben Land – auch wenn eine Zelle breiter ist als die Meerenge.
 - Für 1936, 1942 und 1946 gibt es keine eigenen Grenzdaten; am nächsten liegen 1930, 1938 und 1945.
 - Städte außer den Hauptstädten, Kulturen und Religionen erzeugt der Generator weiterhin selbst.
 - Quellen und Lizenzen: [public/scenarios/README.md](public/scenarios/README.md). Die historischen Grenzen stammen aus
