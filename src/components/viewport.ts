@@ -13,7 +13,8 @@ export type ZoomedLayer = keyof typeof ZOOM_CURVES;
 
 /** The font size of a zoomed layer at a scale, in px */
 export const zoomFontSize = (layer: ZoomedLayer, scale: number): number =>
-  Math.max(Math.round(ZOOM_CURVES[layer](scale) * 100) / 100, 1);
+  // zoomed out below 1 (a map larger than the window) text keeps its size: label paths are fitted to it
+  Math.max(Math.round(ZOOM_CURVES[layer](Math.max(scale, 1)) * 100) / 100, 1);
 
 /** Set the svg resolution */
 export function setViewportSize(width: number, height: number): void {

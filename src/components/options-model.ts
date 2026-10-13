@@ -10,7 +10,7 @@ import {
 } from "@/components/options-schema";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
-import { DEFAULT_DENSITY, EARTH_MIN_DENSITY, getPointsNumber } from "@/data/graph-density";
+import { DEFAULT_DENSITY, EARTH_MIN_DENSITY, getPointsNumber, MAX_DENSITY } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
@@ -255,6 +255,13 @@ class OptionsModel {
 
     cultures.limit = Pins.rolls("cultures") ? gauss(12, 3, 5, 30) : Pins.valueOr("cultures", cultures.limit);
     cultures.set = Pins.rolls("culturesSet") ? this.randomCultureSet() : Pins.valueOr("culturesSet", cultures.set);
+    // a bigger world needs more states, cultures and religions to look like several usual maps
+    const worldScale = heightmapTemplates[generation.template]?.worldScale ?? 1;
+    if (worldScale > 1) {
+      if (Pins.rolls("statesNumber")) states.limit = Math.min(Math.round(states.limit * worldScale), 150);
+      if (Pins.rolls("cultures")) cultures.limit = Math.round(cultures.limit * worldScale);
+      if (Pins.rolls("religionsNumber")) religions.limit = Math.min(Math.round(religions.limit * worldScale), 40);
+    }
     this.capCultures();
 
     // keep the resolved seed, the active style preset and the user's definition sets
@@ -271,7 +278,12 @@ class OptionsModel {
     map.relief = previous.relief;
 
     // and the requests it consumes
-    map.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };
+    const k = Math.sqrt(worldScale);
+    map.graph = {
+      width: Math.round(graph.width * k),
+      height: Math.round(graph.height * k),
+      points: Math.min(getPointsNumber(graph.density) * worldScale, getPointsNumber(MAX_DENSITY))
+    };
     map.cultures.set = cultures.set;
     options.map = map;
     this.repairSets();

@@ -183,6 +183,8 @@ export type HeightmapTemplate = {
   name: string;
   template: string;
   probability: number;
+  /** the world is this many times larger in area, so each continent is as big as one on a usual map */
+  worldScale?: number;
 };
 
 export const heightmapTemplates: Record<string, HeightmapTemplate> = {
@@ -201,8 +203,8 @@ export const heightmapTemplates: Record<string, HeightmapTemplate> = {
   oldWorld: { id: 12, name: "Old World", template: oldWorld, probability: 8 },
   fractious: { id: 13, name: "Fractious", template: fractious, probability: 3 },
   // never picked at random, so existing seeds keep their maps
-  manyContinents: { id: 14, name: "Many Continents", template: manyContinents, probability: 0 },
-  fourContinents: { id: 15, name: "Four Continents", template: fourContinents, probability: 0 }
+  manyContinents: { id: 14, name: "Many Continents", template: manyContinents, probability: 0, worldScale: 6 },
+  fourContinents: { id: 15, name: "Four Continents", template: fourContinents, probability: 0, worldScale: 4 }
 };
 
 declare global {

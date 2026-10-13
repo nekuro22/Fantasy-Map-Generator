@@ -82,6 +82,9 @@ Ländergrenzen:
 - **Punkte-Regler bis 300.000 Zellen** (vorher 100.000) — mehr Platz für viele Länder. Große Werte brauchen spürbar
   länger und mehr Arbeitsspeicher.
 - Neue Vorlagen **Many Continents** (meist 4–6 Kontinente) und **Four Continents** (meist 3–5), getrennt durch Meere.
+  Die Welt wird dafür größer statt die Kontinente kleiner: Four Continents hat die 4-fache, Many Continents die 6-fache
+  Fläche einer normalen Karte (mit entsprechend mehr Zellen, Staaten, Kulturen und Religionen), sodass jeder Kontinent so
+  groß ist wie ein Kontinent auf einer normalen Karte. Die Karte öffnet herausgezoomt; zum Erkunden einfach hineinzoomen.
 - Neues Vorlagen-Werkzeug **Channel** (C im Vorlagen-Editor): zieht eine Meeresstraße von Start- zu Endpunkt der
   X- und Y-Bereiche, z. B. `Channel 4 80-90 33-33 0-100` trennt die Karte bei einem Drittel von oben nach unten.
 

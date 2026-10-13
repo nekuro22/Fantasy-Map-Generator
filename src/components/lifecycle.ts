@@ -63,10 +63,12 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     setSeed(precreatedSeed);
     Options.randomize();
     Icons.syncCustom(); // the carried-over custom icons, and the stored ones at startup
-    if (precreatedGraph && points !== undefined) options.map.graph.points = points;
+    // a template that enlarges the world cannot reuse a graph made at the requested size
+    const graph = options.map.graph.width === options.generation.graph.width ? precreatedGraph : undefined;
+    if (graph && points !== undefined) options.map.graph.points = points;
     applyGraphSize(); // TODO: DOM change, not part of generation
 
-    await GenerationPipeline.run({ graph: precreatedGraph });
+    await GenerationPipeline.run({ graph });
     Options.persist();
 
     syncOptionInputs();
@@ -121,6 +123,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   if (findEl("worldConfigurator")?.offsetParent) Controllers.WorldConfigurator.open();
 
   fitMapToScreen();
+  resetZoom(0); // a map larger than the window opens zoomed out to show all of it
   shouldShowLoading && hideLoading();
   clearMainTip();
 }, 250);
