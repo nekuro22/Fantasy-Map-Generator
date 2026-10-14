@@ -99,8 +99,8 @@ export type FlagStyle =
 
 const FLAGS_BY_FORM: Record<string, Partial<Record<FlagStyle, number>>> = {
   Monarchy: { tricolor: 4, tricolorVertical: 2, nordic: 3, emblem: 3, bicolor: 2, cross: 2, disc: 1 },
-  Republic: { tricolor: 5, tricolorVertical: 5, stripesCanton: 3, bend: 2, chevron: 2, disc: 2, emblem: 2, bicolor: 2 },
-  Union: { stripesCanton: 6, tricolor: 2, nordic: 2, emblem: 1, chevron: 1 },
+  Republic: { tricolor: 6, tricolorVertical: 6, bend: 2, chevron: 2, disc: 2, emblem: 2, bicolor: 2 },
+  Union: { stripesCanton: 2, tricolor: 4, nordic: 3, emblem: 2, chevron: 2 },
   Theocracy: { emblem: 4, tricolor: 2, cross: 2, disc: 2 },
   Anarchy: { black: 1 },
   Socialist: { socialistStar: 4, socialistHammer: 4, socialistStripes: 2, socialistSeal: 2 }

@@ -31,6 +31,12 @@ const TEMPLATE = /* html */ `
     >
       Diplomacy
     </button>
+    <button id="editRegionsButton" data-tip="Click to open the Provinces Editor with its Regions: groups of provinces such as duchies or federal lands">
+      Regions
+    </button>
+    <button id="modernFlagsButton" data-tip="Click to give every state a modern flag: tricolors, stripes with stars, Nordic crosses, socialist designs">
+      Flags
+    </button>
     <button id="editEmblemButton" data-tip="Click to open Emblem Editor" data-shortcut="Shift + Y">
       Emblems
     </button>

@@ -3,6 +3,7 @@ import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawCells } from "@/renderers/draw-cells";
+import { drawFronts, drawRegionLands, drawTensionMap } from "@/renderers/draw-claim-layers";
 import { drawCoastline } from "@/renderers/draw-coastline";
 import { drawCoordinates } from "@/renderers/draw-coordinates";
 import { drawCultures } from "@/renderers/draw-cultures";
@@ -318,6 +319,9 @@ const mapLayers = [
     draw: drawStates
   }),
   new Layer({ id: "provinces", element: "provs", parent: "viewbox", draw: drawProvinces }),
+  new Layer({ id: "regionLands", parent: "viewbox", draw: drawRegionLands }),
+  new Layer({ id: "fronts", element: "frontsMap", parent: "viewbox", draw: drawFronts }),
+  new Layer({ id: "tension", element: "tensionMap", parent: "viewbox", draw: drawTensionMap }),
   new Layer({ id: "zones", parent: "viewbox", draw: drawZones }),
   new Layer({
     id: "borders",

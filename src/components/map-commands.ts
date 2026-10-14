@@ -19,6 +19,7 @@ import { tip } from "@/components/tooltips";
 import { changeMapZoom, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
+import { ModernEmblems } from "@/generators/modern-emblems";
 import { Population } from "@/generators/population-generator";
 import { unfog } from "@/renderers/overlays/fogging";
 import { Services } from "@/services";
@@ -199,6 +200,18 @@ export const MAP_COMMANDS: MapCommand[] = [
     name: "Open Regiments Overview",
     aliases: "military armies",
     run: () => Controllers.RegimentsOverview.open()
+  },
+  {
+    id: "editRegionsButton",
+    name: "Open Regions",
+    aliases: "bundeslaender duchies federal lands subdivisions",
+    run: () => Controllers.ProvincesEditor.openRegions()
+  },
+  {
+    id: "modernFlagsButton",
+    name: "Give states modern flags",
+    aliases: "flags tricolor banner",
+    run: giveModernFlags
   },
   {
     id: "editEmblemButton",
@@ -776,6 +789,12 @@ function regenerateEconomy(): void {
 function regenerateProduction(): void {
   Production.regenerate();
   Layers.draw("goods", "trade");
+}
+
+function giveModernFlags(): void {
+  ModernEmblems.applyFlagsToStates();
+  Layers.draw("emblems");
+  tip("Every state has a modern flag now. Show the Emblems layer to see them", true, "success", 4000);
 }
 
 function regenerateEmblems(): void {

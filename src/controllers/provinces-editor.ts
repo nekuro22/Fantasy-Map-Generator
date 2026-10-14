@@ -463,7 +463,7 @@ function changeRegion(provinceId: number, regionId: number): void {
   } catch (error) {
     tip(errorText(error), false, "error");
   }
-  Layers.draw("provinces");
+  Layers.draw("provinces", "regionLands", "fronts", "tension");
   refreshProvincesEditor();
 }
 
@@ -538,7 +538,7 @@ function editRegions(): void {
           confirm: "Regenerate",
           onConfirm: () => {
             Provinces.generateRegions();
-            Layers.draw("provinces");
+            Layers.draw("provinces", "regionLands", "fronts", "tension");
             refreshProvincesEditor();
           }
         });
@@ -548,7 +548,7 @@ function editRegions(): void {
       }
     },
     close: () => {
-      Layers.draw("provinces");
+      Layers.draw("provinces", "regionLands", "fronts", "tension");
       refreshProvincesEditor();
     },
     position: { my: "center", at: "center", of: "svg" }
@@ -561,7 +561,7 @@ function changeController(provinceId: number, stateId: number): void {
   } catch (error) {
     tip(errorText(error), false, "error");
   }
-  Layers.draw("provinces");
+  Layers.draw("provinces", "regionLands", "fronts", "tension");
   refreshProvincesEditor();
 }
 
@@ -641,7 +641,7 @@ function generateOccupation(): void {
     onConfirm: () => {
       const count = Provinces.generateOccupation();
       tip(count ? `${count} provinces occupied` : "No province is occupied: no state is at war", false, "success");
-      Layers.draw("provinces");
+      Layers.draw("provinces", "regionLands", "fronts", "tension");
       refreshProvincesEditor();
     }
   });
@@ -703,7 +703,7 @@ function changeFill(fillBox: FillBoxElement): void {
   const callback = (newFill: string): void => {
     fillBox.fill = newFill;
     pack.provinces[p].color = newFill;
-    Layers.draw("provinces");
+    Layers.draw("provinces", "regionLands", "fronts", "tension");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -829,7 +829,7 @@ function removeProvince(p: number): void {
         unfog(`focusProvince${p}`);
         removeEmblem("province", p);
 
-        Layers.draw("provinces");
+        Layers.draw("provinces", "regionLands", "fronts", "tension");
         Layers.draw("borders");
         Layers.draw("labels");
         refreshProvincesEditor();
@@ -1032,7 +1032,7 @@ function applyNameChange(p: Province): void {
   if (name && name !== p.name) Provinces.rename(p.i, name);
   if (formName !== (p.formName ?? "")) Provinces.setForm(p.i, formName);
   if (fullName && fullName !== oldFullName) Provinces.setFullName(p.i, fullName);
-  Layers.draw("provinces");
+  Layers.draw("provinces", "regionLands", "fronts", "tension");
   Layers.draw("labels");
   refreshProvincesEditor();
 }
@@ -1350,7 +1350,7 @@ function recolorProvinces(): void {
     p.color = stateColor[0] === "#" ? d3Color(interpolate(stateColor, rndColor)(0.2))!.hex() : rndColor;
   });
 
-  Layers.draw("provinces");
+  Layers.draw("provinces", "regionLands", "fronts", "tension");
   provincesTable.refresh();
 }
 
@@ -1578,4 +1578,10 @@ function updateLockStatus(provinceId: number, classList: DOMTokenList): void {
   classList.toggle("icon-lock");
 }
 
-export const ProvincesEditor = { open, showChart };
+/** the editor with the regions dialog of its state open */
+function openRegions(): void {
+  open();
+  editRegions();
+}
+
+export const ProvincesEditor = { open, openRegions, showChart };

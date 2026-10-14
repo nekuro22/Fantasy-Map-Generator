@@ -117,7 +117,7 @@ export function getFrontLines(): string {
   return d;
 }
 
-function drawControl(): string {
+export function drawControl(): string {
   const { cells, states } = pack;
   const occupier = (cellId: number) => {
     const province = pack.provinces[cells.province[cellId]];
@@ -140,7 +140,7 @@ function drawControl(): string {
     }`;
 }
 
-function drawTension(): string {
+export function drawTension(): string {
   const { cells } = pack;
   const level = (cellId: number) => {
     const score = provinceTension(cells.province[cellId]);
