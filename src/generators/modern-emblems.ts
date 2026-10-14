@@ -37,10 +37,10 @@ function star(cx: number, cy: number, r: number, fill: string, points = 5): stri
 const rect = (x: number, y: number, w: number, h: number, fill: string) =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`;
 
-/** a gold hammer crossed with a sickle, centred on 0,0 */
+/** a hammer crossed with a sickle, centred on 0,0 and about 60 wide */
 function hammerAndSickle(fill: string): string {
-  const sickle = `<path d="M-20,16 A26,26 0 1 1 18,-14 L14,-8 A19,19 0 1 0 -14,10 Z" fill="${fill}"/><path d="M16,-16 L25,-23 L24,-11 Z" fill="${fill}"/>`;
-  const hammer = `<g transform="rotate(-40)"><rect x="-2.6" y="-18" width="5.2" height="42" fill="${fill}"/><rect x="-11" y="-24" width="22" height="9" fill="${fill}"/></g>`;
+  const sickle = `<path d="M-26,-6 A27,27 0 0 0 26,-14" fill="none" stroke="${fill}" stroke-width="6" stroke-linecap="round"/><path d="M-26,-6 L-30,-18" stroke="${fill}" stroke-width="7" stroke-linecap="round"/><path d="M26,-14 L30,-24 L18,-20 Z" fill="${fill}"/>`;
+  const hammer = `<g transform="translate(0 -2) rotate(45)"><rect x="-2.6" y="-26" width="5.2" height="52" fill="${fill}"/><rect x="-13" y="-30" width="26" height="11" fill="${fill}"/></g>`;
   return `${sickle}${hammer}`;
 }
 
