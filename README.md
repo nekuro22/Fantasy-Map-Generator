@@ -149,7 +149,7 @@ fmg --help
 - Karten aus dem Original lassen sich hier ohne Änderung öffnen.
 - Karten aus diesem Fork lassen sich im Original öffnen. Das Original behält die neuen Werte in der Datei,
   zeigt Ansprüche und Besatzungen aber nicht an und behandelt die Staatsform „Socialist“ wie eine Monarchie.
-- Das Dateiformat ist unverändert; neu sind nur die optionalen Felder `cores`, `claims`, `controller`, `history`, `region` (Provinz) sowie `regions` und `subject` (Staat)
+- Das Dateiformat ist unverändert; neu sind nur die optionalen Felder `cores`, `claims`, `controller`, `history`, `region` (Provinz) sowie `regions` und `subject` (Staat); neu: `lore` (Staat, Region) und `history` (Region)
   (beschrieben in [docs/architecture/data-model.md](docs/architecture/data-model.md)).
 
 ## Lizenz und Urheber
@@ -165,3 +165,10 @@ fmg --help
 
 Fehler im Generator selbst, die nicht mit den Änderungen dieses Forks zu tun haben, meldest du am besten
 [beim Original](https://github.com/Azgaar/Fantasy-Map-Generator/issues).
+
+### Weltgeschichte (Tools → History)
+
+- Die Welt als datierte Version speichern (Jahr und Ära kommen aus dem Lore-Editor); optional rückt das Jahr danach vor.
+- Der Verlauf zeigt je Version, was sich gegenüber der vorigen geändert hat: Staaten gegründet/untergegangen, Land getauscht, besetzt oder befreit, Kriege und Frieden, Staatsform und Hauptstadt, dazu eine Tabelle der Provinzen pro Staat.
+- Eine Version lässt sich wieder laden; die Versionen liegen im Browser-Speicher, je Welt (Seed) getrennt.
+- Lore-Kästchen für Staaten und Regionen: das Verlauf-Symbol im Staaten-Editor und in der Regionen-Liste öffnet Lore und Geschichte.

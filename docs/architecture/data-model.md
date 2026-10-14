@@ -207,6 +207,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0, Socialist 0.05), jittered per state. Always `0` for neutrals
 - `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `pollTax × (rural + urban)`. Always `0` for neutrals
 - `history`: `string` - optional. Free-text history of the state, plain text
+- `lore`: `string` - optional. Free-text description of the nation, plain text. Regions (`regions[]`) carry optional `lore` and `history` the same way
 - `lock`: `boolean` - `true` if state is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if state is removed
 - `note`: `string` - optional. The user's note (legend) about the state, as html. Removed with it

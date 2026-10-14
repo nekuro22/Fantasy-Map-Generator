@@ -429,7 +429,7 @@ function renderStatesPage(view: TableView<State>): void {
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
       ${noteIcon("this state")}
-      ${historyIcon("this state", !!s.history)}
+      ${historyIcon("this state", !!(s.history || s.lore))}
       <span data-col="locate" data-tip="Locate the state" class="icon-target"></span>
       <span data-col="focus" data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
       <span data-col="lock" data-tip="Lock the state to protect it from re-generation" class="icon-lock${
@@ -1354,8 +1354,10 @@ export const StatesEditor = { open, showChart: showStatesChart };
 function editStateHistory(stateId: number): void {
   const state = pack.states[stateId];
   openHistoryDialog({
-    title: `${translate("History")}: ${state.fullName || state.name}`,
+    title: `${translate("Lore and history")}: ${state.fullName || state.name}`,
     text: state.history,
+    lore: state.lore,
+    onSaveLore: text => States.setLore(stateId, text),
     onSave: text => {
       States.setHistory(stateId, text);
       refreshStatesEditor();

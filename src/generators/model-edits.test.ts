@@ -431,6 +431,21 @@ describe("Provinces", () => {
     expect(() => Provinces.setHistory(1, 5 as unknown as string)).toThrow("must be text");
   });
 
+  it("writes the lore of a state and of a region", () => {
+    States.setLore(2, "Proud herders  \n");
+    expect(pack.states[2].lore).toBe("Proud herders");
+    States.setLore(2, " ");
+    expect("lore" in pack.states[2]).toBe(false);
+    expect(() => States.setLore(0, "x")).toThrow();
+    const id = Provinces.addRegion(2, "North");
+    Provinces.setRegionText(2, id, "lore", "Cold and green");
+    Provinces.setRegionText(2, id, "history", "1200 – Founded");
+    expect(Provinces.region(2, id)).toMatchObject({ lore: "Cold and green", history: "1200 – Founded" });
+    Provinces.setRegionText(2, id, "lore", "");
+    expect("lore" in Provinces.region(2, id)!).toBe(false);
+    expect(() => Provinces.setRegionText(2, 99, "lore", "x")).toThrow("no region");
+  });
+
   it("gives each state a core on the provinces it owns that are nobody's core", () => {
     pack.provinces.push({ i: 2, state: 2, cores: [2] } as (typeof pack.provinces)[number]);
     pack.provinces.push({ i: 3, state: 2, cores: [1] } as (typeof pack.provinces)[number]);

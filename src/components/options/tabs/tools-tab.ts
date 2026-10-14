@@ -34,6 +34,9 @@ const TEMPLATE = /* html */ `
     <button id="editRegionsButton" data-tip="Click to open the Provinces Editor with its Regions: groups of provinces such as duchies or federal lands">
       Regions
     </button>
+    <button id="worldHistoryButton" data-tip="Click to open World History: save the world as dated versions, read how it changed over the years and go back to an earlier version">
+      History
+    </button>
     <button id="modernFlagsButton" data-tip="Click to give every state a modern flag: tricolors, stripes with stars, Nordic crosses, socialist designs">
       Flags
     </button>

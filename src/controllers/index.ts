@@ -80,6 +80,7 @@ export const Controllers = createRegistry({
   TransportEditor: () => import("@/controllers/journey/transport-editor").then(m => m.TransportEditor),
   UnitsEditor: () => import("@/controllers/units-editor").then(m => m.UnitsEditor),
   View3d: () => import("@/controllers/view-3d").then(m => m.View3d),
+  WorldHistory: () => import("@/controllers/world-history").then(m => m.WorldHistory),
   WorldConfigurator: () => import("@/controllers/world-configurator").then(m => m.WorldConfigurator),
   ZonesEditor: () => import("@/controllers/zones-editor").then(m => m.ZonesEditor)
 });

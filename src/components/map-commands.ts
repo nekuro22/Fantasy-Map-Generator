@@ -208,6 +208,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.ProvincesEditor.openRegions()
   },
   {
+    id: "worldHistoryButton",
+    name: "Open World History",
+    aliases: "chronicle timeline versions snapshots calendar era geschichte zeitrechnung",
+    run: () => Controllers.WorldHistory.open()
+  },
+  {
     id: "modernFlagsButton",
     name: "Give states modern flags",
     aliases: "flags tricolor banner",

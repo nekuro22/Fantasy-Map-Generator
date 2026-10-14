@@ -509,6 +509,15 @@ class ProvinceModule {
       if (province?.state === stateId && province.region === regionId) delete province.region;
   }
 
+  /** Set a region's lore or history as free text; empty removes it */
+  setRegionText(stateId: number, regionId: number, field: "lore" | "history", text: string): void {
+    const region = this.region(stateId, regionId);
+    if (!region) throw new Error(`State ${stateId} has no region ${regionId}`);
+    if (typeof text !== "string") throw new Error(`The ${field} must be text`);
+    if (text.trim()) region[field] = text.replace(/\s+$/, "");
+    else delete region[field];
+  }
+
   /** A living region of a state */
   region(stateId: number, regionId: number) {
     return pack.states[stateId]?.regions?.find(r => r.i === regionId && !r.removed);

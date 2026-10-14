@@ -486,6 +486,7 @@ function editRegions(): void {
           <input value="${r.name}" class="regionName notranslate" data-tip="Region name" style="width: 9em" />
           <input value="${r.formName}" class="regionForm" list="regionForms" data-tip="Region form, such as Duchy, Land or Oblast" style="width: 9em" />
           <span data-tip="Provinces in the region" style="width: 2.5em; text-align: right">${count(r.i)}</span>
+          <span class="icon-history pointer regionLore${r.lore || r.history ? "" : " inactive"}" data-tip="Write the lore and history of the region"></span>
           <span class="icon-trash-empty pointer regionRemove" data-tip="Remove the region; its provinces belong to none"></span>
         </div>`
       )
@@ -515,6 +516,21 @@ function editRegions(): void {
     });
     ensureEl("regionsList").addEventListener("click", event => {
       const el = event.target as HTMLElement;
+      if (el.classList.contains("regionLore")) {
+        const id = +el.closest<HTMLElement>(".regionRow")!.dataset.id!;
+        const region = Provinces.region(stateId!, id)!;
+        openHistoryDialog({
+          title: `${translate("Lore and history")}: ${region.fullName}`,
+          text: region.history,
+          lore: region.lore,
+          onSaveLore: text => Provinces.setRegionText(stateId!, id, "lore", text),
+          onSave: text => {
+            Provinces.setRegionText(stateId!, id, "history", text);
+            el.classList.toggle("inactive", !(region.lore || region.history));
+          }
+        });
+        return;
+      }
       if (!el.classList.contains("regionRemove")) return;
       Provinces.removeRegion(stateId!, +el.closest<HTMLElement>(".regionRow")!.dataset.id!);
       render();

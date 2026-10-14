@@ -61,6 +61,8 @@ export interface State {
   military?: Regiment[];
   provinces?: number[];
   history?: string;
+  /** the author's description of the nation: culture, character, secrets */
+  lore?: string;
   temp?: any;
   alert?: number;
   salesTax: number;
@@ -81,6 +83,8 @@ export interface Region {
   fullName: string;
   color: string;
   removed?: boolean;
+  history?: string;
+  lore?: string;
 }
 
 interface Campaign {
@@ -1129,6 +1133,14 @@ class StatesModule {
     if (typeof text !== "string") throw new Error("The history must be text");
     if (text.trim()) state.history = text.replace(/\s+$/, "");
     else delete state.history;
+  }
+
+  /** Set a state's lore, its description in free text; empty removes it */
+  setLore(stateId: number, text: string): void {
+    const state = this.ruled(stateId);
+    if (typeof text !== "string") throw new Error("The lore must be text");
+    if (text.trim()) state.lore = text.replace(/\s+$/, "");
+    else delete state.lore;
   }
 
   /** Set a state's dominant culture */
