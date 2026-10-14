@@ -80,6 +80,59 @@ function disc(cx: number, cy: number, r: number, fill: string, stroke = ""): str
 
 const contrast = (color: string, a: string, b: string) => (LIGHT.has(color) ? a : b);
 
+type Mark = "star" | "hammer" | "seal" | "ring";
+
+/** one socialist symbol, centred on x,y and sized by scale (1 = about 60 px) */
+function mark(kind: Mark, x: number, y: number, scale: number, field: string, accent: string): string {
+  const at = (inner: string) => `<g transform="translate(${x} ${y}) scale(${scale})">${inner}</g>`;
+  if (kind === "star") return at(star(0, 0, 30, accent));
+  if (kind === "ring") return at(`${disc(0, 0, 34, field, accent)}${star(0, 0, 24, accent)}`);
+  if (kind === "hammer") return at(`<g transform="scale(1.1)">${hammerAndSickle(accent)}</g>`);
+  return at(`<g transform="scale(.45) translate(-150 -96)">${seal(field, accent)}</g>`);
+}
+
+/** a socialist flag: field, accent colour, layout and symbol all vary, so neighbours differ */
+function socialist(random: Random, flag: FlagStyle, own: string): string {
+  const fields = [COLORS.red, COLORS.red, COLORS.red, own, COLORS.green, COLORS.blue, COLORS.black, COLORS.orange];
+  const field = pick(random, fields);
+  const accent = LIGHT.has(field) ? COLORS.black : random() < 0.65 ? COLORS.yellow : COLORS.white;
+  const band = pick(
+    random,
+    [COLORS.white, COLORS.yellow, COLORS.red, COLORS.green, COLORS.black, COLORS.blue].filter(c => c !== field)
+  );
+  const bandText = LIGHT.has(band) ? COLORS.black : accent === band ? COLORS.white : accent;
+  const symbol: Mark =
+    flag === "socialistHammer"
+      ? "hammer"
+      : flag === "socialistSeal"
+        ? "seal"
+        : pick(random, ["star", "star", "ring", "hammer"] as Mark[]);
+  const layout = Math.floor(random() * 6);
+  const base = rect(0, 0, W, H, field);
+  if (flag === "socialistStripes" || layout === 5) {
+    const thin = rect(0, H * 0.4, W, H * 0.2, band);
+    const edge = random() < 0.5 ? rect(0, 0, W, 14, band) + rect(0, H - 14, W, 14, band) : "";
+    return base + thin + edge + mark(symbol, W * 0.2, H * 0.2, 0.7, field, accent);
+  }
+  switch (layout) {
+    case 0:
+      return base + mark(symbol, 56, 52, 0.9, field, accent);
+    case 1:
+      return base + mark(symbol, W / 2, H / 2, 2, field, accent);
+    case 2:
+      return base + rect(0, 0, W * 0.3, H, band) + mark(symbol, W * 0.15, H / 2, 0.9, band, bandText);
+    case 3:
+      return (
+        base +
+        rect(0, 0, W, H * 0.12, band) +
+        rect(0, H * 0.88, W, H * 0.12, band) +
+        mark(symbol, W / 2, H / 2, 1.6, field, accent)
+      );
+    default:
+      return `${base}<polygon points="0,0 ${W * 0.4},0 0,${H * 0.6}" fill="${band}"/>${mark(symbol, W * 0.62, H / 2, 1.7, field, accent)}`;
+  }
+}
+
 export type FlagStyle =
   | "tricolor"
   | "tricolorVertical"
@@ -212,20 +265,11 @@ export function drawFlag(seed: string, form: string, stateColor = "", style?: Fl
         rect(142, 0, 16, H, second);
       break;
     }
-    case "socialistStar": {
-      art = rect(0, 0, W, H, red) + star(46, 46, 26, gold);
-      break;
-    }
-    case "socialistHammer": {
-      art = `${rect(0, 0, W, H, red)}<g transform="translate(66 70) scale(1.5)">${hammerAndSickle(gold)}</g>${star(66, 26, 14, gold)}`;
-      break;
-    }
-    case "socialistStripes": {
-      art = rect(0, 0, W, H, red) + rect(0, H * 0.42, W, H * 0.16, gold) + star(W * 0.2, H * 0.22, 22, gold);
-      break;
-    }
+    case "socialistStar":
+    case "socialistHammer":
+    case "socialistStripes":
     case "socialistSeal": {
-      art = rect(0, 0, W, H, red) + seal(red, gold);
+      art = socialist(random, flag, own);
       break;
     }
     case "black": {
