@@ -18,6 +18,8 @@ export interface WorldSummary {
   provinceNames: Record<number, string>;
   /** pairs of state ids at war, smaller id first */
   wars: [number, number][];
+  /** factions with their member state ids; absent in versions saved before factions existed */
+  factions?: { i: number; name: string; members: number[] }[];
 }
 
 export interface WorldVersion {
@@ -43,7 +45,11 @@ export type ChangeKind =
   | "occupied"
   | "liberated"
   | "war"
-  | "peace";
+  | "peace"
+  | "factionFounded"
+  | "factionEnded"
+  | "joined"
+  | "left";
 
 export interface Change {
   kind: ChangeKind;
@@ -79,6 +85,9 @@ export function summarize(): WorldSummary {
     for (const b of living)
       if (a.i < b.i && (a.diplomacy?.[b.i] === "Enemy" || b.diplomacy?.[a.i] === "Enemy"))
         summary.wars.push([a.i, b.i]);
+  summary.factions = (pack.factions ?? [])
+    .filter(f => !f.removed)
+    .map(f => ({ i: f.i, name: f.name, members: [...f.members] }));
   return summary;
 }
 
@@ -149,6 +158,20 @@ export function diffWorlds(before: WorldSummary, after: WorldSummary): Change[] 
     if (!wasWar.has(key(pair))) changes.push({ kind: "war", state: name(pair[0]), other: name(pair[1]) });
   for (const pair of before.wars)
     if (!isWar.has(key(pair))) changes.push({ kind: "peace", state: name(pair[0]), other: name(pair[1]) });
+  if (before.factions && after.factions) {
+    const oldF = new Map(before.factions.map(f => [f.i, f]));
+    const newF = new Map(after.factions.map(f => [f.i, f]));
+    for (const faction of after.factions) {
+      const was = oldF.get(faction.i);
+      if (!was) changes.push({ kind: "factionFounded", state: faction.name });
+      for (const m of faction.members)
+        if (was && !was.members.includes(m)) changes.push({ kind: "joined", state: name(m), other: faction.name });
+      for (const m of was?.members ?? [])
+        if (!faction.members.includes(m)) changes.push({ kind: "left", state: name(m), other: faction.name });
+    }
+    for (const faction of before.factions)
+      if (!newF.has(faction.i)) changes.push({ kind: "factionEnded", state: faction.name });
+  }
   return changes;
 }
 

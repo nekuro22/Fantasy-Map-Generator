@@ -573,3 +573,8 @@ Name generator consumes training sets of real-world town names (with the excepti
 - `max`: `number` - recommended maximal length of generated names. If max length is reached, generator will stop adding new syllables
 - `d`: `string` - letters that are allowed to be duplicated in generated names
 - `m`: `number` - if multi-word name is generated, how many of this cases should be transformed into a single word. `0` means multi-word names are not allowed, `1` - all generated multi-word names will stay as they are
+
+## Factions
+
+`pack.factions` (saved as line 54 of the map file): `{ i, name, color, type, leader, members[], founded?, removed? }`. `leader` is a state id and always a member; members are allies of each other. A state is in at most one faction.
+

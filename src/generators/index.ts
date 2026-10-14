@@ -19,6 +19,7 @@ import "./religions-generator";
 import "./labels-generator";
 import "./added-labels";
 import "./provinces-generator";
+import "./factions-generator";
 import "./emblems-generator";
 import "./ice-generator";
 import "./ocean-generator";

@@ -40,6 +40,14 @@ function describe(change: Change): string {
       return `${name(state)} ${translate("and")} ${name(other!)} ${translate("went to war")}`;
     case "peace":
       return `${name(state)} ${translate("and")} ${name(other!)} ${translate("made peace")}`;
+    case "factionFounded":
+      return `${name(state)} ${translate("was founded as a faction")}`;
+    case "factionEnded":
+      return `${name(state)} ${translate("was dissolved")}`;
+    case "joined":
+      return `${name(state)} ${translate("joined")} ${name(other!)}`;
+    case "left":
+      return `${name(state)} ${translate("left")} ${name(other!)}`;
     default:
       return "";
   }
@@ -55,7 +63,11 @@ const SHOWN = new Set([
   "occupied",
   "liberated",
   "war",
-  "peace"
+  "peace",
+  "factionFounded",
+  "factionEnded",
+  "joined",
+  "left"
 ]);
 
 function timelineHtml(versions: WorldVersion[]): string {

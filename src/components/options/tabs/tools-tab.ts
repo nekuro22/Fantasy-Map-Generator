@@ -34,6 +34,9 @@ const TEMPLATE = /* html */ `
     <button id="editRegionsButton" data-tip="Click to open the Provinces Editor with its Regions: groups of provinces such as duchies or federal lands">
       Regions
     </button>
+    <button id="factionsButton" data-tip="Click to open Factions: alliances and blocs of states under a leader, as in Hearts of Iron">
+      Factions
+    </button>
     <button id="worldHistoryButton" data-tip="Click to open World History: save the world as dated versions, read how it changed over the years and go back to an earlier version">
       History
     </button>

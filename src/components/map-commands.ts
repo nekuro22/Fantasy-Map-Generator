@@ -208,6 +208,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.ProvincesEditor.openRegions()
   },
   {
+    id: "factionsButton",
+    name: "Open Factions",
+    aliases: "alliances blocs pacts allies axis comintern fraktionen buendnisse",
+    run: () => Controllers.FactionsEditor.open()
+  },
+  {
     id: "worldHistoryButton",
     name: "Open World History",
     aliases: "chronicle timeline versions snapshots calendar era geschichte zeitrechnung",

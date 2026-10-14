@@ -52,6 +52,20 @@ describe("world history", () => {
     expect(diffWorlds(world({ wars: [[1, 2]] }), world()).map(c => c.kind)).toEqual(["peace"]);
   });
 
+  it("sees factions founded, joined, left and ended", () => {
+    const f = (members: number[], i = 1) => ({ i, name: "Pact", members });
+    const kinds = (a: number[][], b: number[][]) =>
+      diffWorlds(
+        world({ factions: a.map((m, i) => f(m, i + 1)) }),
+        world({ factions: b.map((m, i) => f(m, i + 1)) })
+      ).map(c => c.kind);
+    expect(kinds([], [[1]])).toEqual(["factionFounded"]);
+    expect(kinds([[1]], [[1, 2]])).toEqual(["joined"]);
+    expect(kinds([[1, 2]], [[1]])).toEqual(["left"]);
+    expect(kinds([[1]], [])).toEqual(["factionEnded"]);
+    expect(diffWorlds(world(), world({ factions: [f([1])] }))).toEqual([]); // versions from before factions
+  });
+
   it("tabulates the provinces of every state over the versions", () => {
     const v = (summary: WorldSummary) => ({ summary }) as WorldVersion;
     const table = territoryTable([v(world()), v(world({ states: [state(1, "Alia", 3), state(3, "Cora", 1)] }))]);

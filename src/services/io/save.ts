@@ -66,6 +66,7 @@ function prepareMapData(): string {
   const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
+  const factions = JSON.stringify(pack.factions ?? []);
   const fonts = JSON.stringify(
     getUsedFonts(
       ensureEl("map") as Element as SVGSVGElement,
@@ -186,7 +187,8 @@ function prepareMapData(): string {
     relief,
     layers,
     graphOverride,
-    journeys
+    journeys,
+    factions
   ].join("\r\n");
   return mapData;
 }

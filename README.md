@@ -172,3 +172,11 @@ Fehler im Generator selbst, die nicht mit den Änderungen dieses Forks zu tun ha
 - Der Verlauf zeigt je Version, was sich gegenüber der vorigen geändert hat: Staaten gegründet/untergegangen, Land getauscht, besetzt oder befreit, Kriege und Frieden, Staatsform und Hauptstadt, dazu eine Tabelle der Provinzen pro Staat.
 - Eine Version lässt sich wieder laden; die Versionen liegen im Browser-Speicher, je Welt (Seed) getrennt.
 - Lore-Kästchen für Staaten und Regionen: das Verlauf-Symbol im Staaten-Editor und in der Regionen-Liste öffnet Lore und Geschichte.
+
+### Fraktionen (Tools → Factions)
+
+- Bündnisse und Blöcke wie in Hearts of Iron: ein Anführer, Mitglieder, Name, Art (Bündnis, Pakt, Block …) und Farbe.
+- Mitglieder sind untereinander verbündet; wer mit einem Mitglied im Krieg ist, kann nicht beitreten. "Zu den Waffen rufen" lässt die Mitglieder in alle Kriege des Anführers ziehen.
+- Beim Erzeugen der Karte entstehen Fraktionen aus den vorhandenen Bündnissen; übrige sozialistische Staaten bilden einen Block. "Erzeugen" macht das auf Knopfdruck neu.
+- Ebene "Factions" im Layers-Tab färbt die Staaten je Fraktion, der Ring markiert die Hauptstadt des Anführers. Die Weltgeschichte verzeichnet Gründung, Beitritt, Austritt und Auflösung.
+
