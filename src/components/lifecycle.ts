@@ -19,7 +19,7 @@ import { GenerationPipeline } from "@/generators/generation-pipeline";
 import { adoptLegacyIconSlots } from "@/generators/styles-legacy";
 import { stashCallbackToken } from "@/services/assistant/azgaar-server/auth";
 import { initiateAutosave } from "@/services/autosave";
-import { getLanguage, initLanguage } from "@/services/i18n";
+import { getLanguage, initLanguage, translate } from "@/services/i18n";
 import { logStats } from "@/services/logging";
 import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
@@ -67,6 +67,14 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     const graph = options.map.graph.width === options.generation.graph.width ? precreatedGraph : undefined;
     if (graph && points !== undefined) options.map.graph.points = points;
     applyGraphSize(); // TODO: DOM change, not part of generation
+    const cells = getPointsNumber(options.generation.graph.density);
+    if (cells >= 100000)
+      tip(
+        `${translate("Large map")}: ${cells.toLocaleString("en-US")} ${translate("cells")}. ${translate("Generating can take a minute or two")}`,
+        true,
+        "warn",
+        30000
+      );
 
     await GenerationPipeline.run({ graph });
     Options.persist();
