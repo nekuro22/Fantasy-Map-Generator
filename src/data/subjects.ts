@@ -8,16 +8,20 @@ export interface SubjectType {
   weights: Partial<Record<string, number>>;
   /** only for subjects of this form of government */
   subjectForm?: string;
+  /** only in this setting; none means both */
+  setting?: "medieval" | "modern";
 }
 
 export const SUBJECT_TYPES: Record<string, SubjectType> = {
   Vassal: {
     tip: "Feudal subject: owes its overlord troops and taxes, rules itself otherwise",
+    setting: "medieval",
     names: ["Marches", "Duchy", "Principality"],
     weights: { Monarchy: 5, Theocracy: 2 }
   },
   Dominion: {
     tip: "Self-governing realm of the overlord's crown, nearly independent",
+    setting: "modern",
     names: ["Dominion"],
     weights: { Monarchy: 2, Union: 2 }
   },
@@ -29,6 +33,7 @@ export const SUBJECT_TYPES: Record<string, SubjectType> = {
   },
   Tributary: {
     tip: "Pays tribute and acknowledges the overlord's supremacy, free in all else",
+    setting: "medieval",
     names: [],
     weights: { Monarchy: 2, Theocracy: 2, Anarchy: 1 }
   },
@@ -39,26 +44,31 @@ export const SUBJECT_TYPES: Record<string, SubjectType> = {
   },
   Puppet: {
     tip: "Ruled by a government the overlord installed and controls",
+    setting: "modern",
     names: [],
     weights: { Monarchy: 1, Republic: 2, Union: 1, Socialist: 1, Anarchy: 1 }
   },
   Satellite: {
     tip: "Formally independent people's state that follows the line of its socialist overlord",
+    setting: "modern",
     names: ["People's Republic", "People's Democratic Republic", "Socialist Republic"],
     weights: { Socialist: 4 }
   },
   "Union Republic": {
     tip: "Constituent republic of a socialist union, with the right to secede on paper only",
+    setting: "modern",
     names: ["Soviet Socialist Republic", "Autonomous Soviet Socialist Republic"],
     weights: { Socialist: 2 }
   },
   "Supervised State": {
     tip: "Run by the overlord's commissioners or military administration",
+    setting: "modern",
     names: ["Reichskommissariat", "Military Administration", "Governorate"],
     weights: { Monarchy: 0.5, Republic: 1, Socialist: 1 }
   },
   Mandate: {
     tip: "Administered by the overlord until it is deemed ready for independence",
+    setting: "modern",
     names: ["Mandate"],
     weights: { Republic: 2, Union: 1 }
   },
@@ -69,11 +79,13 @@ export const SUBJECT_TYPES: Record<string, SubjectType> = {
   },
   "Associated State": {
     tip: "Freely associated with the overlord, which handles its defence",
+    setting: "modern",
     names: ["Associated State", "Free State", "Commonwealth"],
     weights: { Republic: 2, Union: 2 }
   },
   "Ecclesiastical Fief": {
     tip: "Land ruled by a prince of the church in the name of the overlord's faith",
+    setting: "medieval",
     names: ["Prince-Bishopric", "Prelature"],
     weights: { Theocracy: 3 }
   }

@@ -89,6 +89,8 @@ Ländergrenzen:
   Die Welt wird dafür größer statt die Kontinente kleiner: Four Continents hat die 4-fache, Many Continents die 6-fache
   Fläche einer normalen Karte (mit entsprechend mehr Zellen, Staaten, Kulturen und Religionen), sodass jeder Kontinent so
   groß ist wie ein Kontinent auf einer normalen Karte. Die Karte öffnet herausgezoomt; zum Erkunden einfach hineinzoomen.
+- Weitere Mehr-Kontinent-Vorlagen: **Two Continents** (2×), **Three Continents** (3×), **Six Continents** (6, Gitter aus Meeren), **Continents and Islands** (3×, viele Inseln) und **Mediterranean World** (3×, großes Binnenmeer). Wie bei den anderen wird die Welt größer statt die Kontinente kleiner; bei sehr hoher Zellzahl (Dichte 6) schrumpft das Land bei Six und Many Continents.
+- Neue Option **Setting** (Optionen → Generation, unter „States number“): **Medieval** (Königreiche, Herzogtümer, Vasallen) oder **Modern** (Republiken, Föderationen, sozialistische Staaten, Puppets, Protektorate, Mandate).
 - Neues Vorlagen-Werkzeug **Channel** (C im Vorlagen-Editor): zieht eine Meeresstraße von Start- zu Endpunkt der
   X- und Y-Bereiche, z. B. `Channel 4 80-90 33-33 0-100` trennt die Karte bei einem Drittel von oben nach unten.
 

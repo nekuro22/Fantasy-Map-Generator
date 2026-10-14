@@ -178,6 +178,78 @@ const fourContinents = `Hill 1 80-90 45-55 40-60
   Pit 3-4 10-15 10-90 10-90
   Mask 4 0 0 0`;
 
+// two continents split by one sea; an Old and a New World
+const twoContinents = `Hill 1 80-90 45-55 40-60
+  Hill 8-10 30-40 8-92 12-88
+  Multiply 0.85 land 0 0
+  Add -2 all 0 0
+  Range 4-6 25-40 8-92 15-85
+  Smooth 2 0 0 0
+  Channel 7 85-95 50-50 0-100
+  Hill 3-5 12-18 5-95 5-95
+  Add -4 0-19 0 0
+  Pit 2-3 10-15 10-90 10-90
+  Mask 4 0 0 0`;
+
+// three continents in a row, split by two seas
+const threeContinents = `Hill 1 80-90 45-55 40-60
+  Hill 8-10 30-40 8-92 12-88
+  Multiply 0.85 land 0 0
+  Add -2 all 0 0
+  Range 4-6 25-40 8-92 15-85
+  Smooth 2 0 0 0
+  Channel 7 85-95 33-33 0-100
+  Channel 7 85-95 67-67 0-100
+  Hill 4-6 12-18 5-95 5-95
+  Add -4 0-19 0 0
+  Pit 3-4 10-15 10-90 10-90
+  Mask 4 0 0 0`;
+
+// a grid of six continents: two seas across, one along
+const sixContinents = `Hill 1 80-90 45-55 40-60
+  Hill 8-10 30-40 8-92 12-88
+  Multiply 0.85 land 0 0
+  Add -2 all 0 0
+  Range 4-6 25-40 8-92 15-85
+  Smooth 2 0 0 0
+  Hill 3-4 30-40 8-92 12-88
+  Channel 4 85-95 33-33 0-100
+  Channel 4 85-95 67-67 0-100
+  Channel 4 85-95 0-100 50-50
+  Hill 4-6 12-18 5-95 5-95
+  Add -3 0-19 0 0
+  Mask 4 0 0 0`;
+
+// two big continents with many islands and island chains between
+const continentsAndIslands = `Hill 1 80-90 45-55 40-60
+  Hill 8-10 30-40 8-92 12-88
+  Multiply 0.85 land 0 0
+  Add -2 all 0 0
+  Range 4-6 25-40 8-92 15-85
+  Smooth 2 0 0 0
+  Channel 6 85-95 50-50 0-100
+  Channel 4 80-90 0-45 50-50
+  Channel 4 80-90 55-100 50-50
+  Hill 14-20 8-14 5-95 5-95
+  Add -3 0-19 0 0
+  Pit 3-4 10-15 10-90 10-90
+  Mask 4 0 0 0`;
+
+// continents around a great inland sea
+const mediterraneanWorld = `Hill 1 80-90 45-55 40-60
+  Hill 8-10 30-40 8-92 12-88
+  Multiply 0.85 land 0 0
+  Add -2 all 0 0
+  Range 4-6 25-40 8-92 15-85
+  Smooth 2 0 0 0
+  Pit 14-18 85-100 36-64 36-64
+  Channel 5 90-100 50-50 25-50
+  Channel 5 90-100 50-50 50-75
+  Smooth 1 0 0 0
+  Hill 3-5 12-18 5-95 5-95
+  Add -4 0-19 0 0
+  Mask 4 0 0 0`;
+
 export type HeightmapTemplate = {
   id: number;
   name: string;
@@ -204,7 +276,24 @@ export const heightmapTemplates: Record<string, HeightmapTemplate> = {
   fractious: { id: 13, name: "Fractious", template: fractious, probability: 3 },
   // never picked at random, so existing seeds keep their maps
   manyContinents: { id: 14, name: "Many Continents", template: manyContinents, probability: 0, worldScale: 6 },
-  fourContinents: { id: 15, name: "Four Continents", template: fourContinents, probability: 0, worldScale: 4 }
+  fourContinents: { id: 15, name: "Four Continents", template: fourContinents, probability: 0, worldScale: 4 },
+  twoContinents: { id: 16, name: "Two Continents", template: twoContinents, probability: 0, worldScale: 2 },
+  threeContinents: { id: 17, name: "Three Continents", template: threeContinents, probability: 0, worldScale: 3 },
+  sixContinents: { id: 18, name: "Six Continents", template: sixContinents, probability: 0, worldScale: 6 },
+  continentsAndIslands: {
+    id: 19,
+    name: "Continents and Islands",
+    template: continentsAndIslands,
+    probability: 0,
+    worldScale: 3
+  },
+  mediterraneanWorld: {
+    id: 20,
+    name: "Mediterranean World",
+    template: mediterraneanWorld,
+    probability: 0,
+    worldScale: 3
+  }
 };
 
 declare global {

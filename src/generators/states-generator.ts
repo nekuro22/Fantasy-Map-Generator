@@ -817,8 +817,13 @@ class StatesModule {
     const states = pack.states.filter(s => s.i && !s.removed && !s.lock);
     if (states.length < 1) return;
 
-    const generic = { Monarchy: 25, Republic: 2, Union: 1 };
-    const naval = { Monarchy: 25, Republic: 8, Union: 3 };
+    const modern = options.generation?.states?.setting === "modern";
+    const generic: Record<string, number> = modern
+      ? { Monarchy: 6, Republic: 14, Union: 2, Socialist: 4 }
+      : { Monarchy: 25, Republic: 2, Union: 1 };
+    const naval: Record<string, number> = modern
+      ? { Monarchy: 5, Republic: 18, Union: 3, Socialist: 2 }
+      : { Monarchy: 25, Republic: 8, Union: 3 };
 
     const medianState = median(pack.states.map(s => s.area))!;
     const empireMin = states.map(s => s.area).sort((a = 0, b = 0) => b - a)[
@@ -830,7 +835,34 @@ class StatesModule {
       return tier;
     });
 
-    const monarchy = ["Duchy", "Grand Duchy", "Principality", "Kingdom", "Empire"]; // per expansionism tier
+    const monarchy = modern
+      ? ["Principality", "Grand Duchy", "Kingdom", "Kingdom", "Empire"]
+      : ["Duchy", "Grand Duchy", "Principality", "Kingdom", "Empire"]; // per expansionism tier
+    const socialist = {
+      "People's Republic": 6,
+      "Socialist Republic": 4,
+      "People's Democratic Republic": 3,
+      "Soviet Socialist Republic": 2,
+      "Socialist Federation": 1,
+      "Workers' Republic": 1,
+      "People's Commune": 1
+    };
+    const modernRepublic = {
+      Republic: 50,
+      "Federal Republic": 12,
+      "Democratic Republic": 8,
+      Federation: 5,
+      "Free State": 2,
+      Junta: 3
+    };
+    const modernUnion = {
+      Union: 3,
+      Confederation: 1,
+      "United Kingdom": 1,
+      "United Republic": 1,
+      "United States": 3,
+      Commonwealth: 2
+    };
     const republic = {
       Republic: 75,
       Federation: 4,
@@ -883,6 +915,11 @@ class StatesModule {
       const selectForm = (s: any, tier: number) => {
         const base = pack.cultures[s.culture].base;
 
+        if (s.form === "Socialist") return tier >= 3 && P(0.5) ? "Soviet Union" : rw(socialist);
+        if (modern && s.form === "Monarchy") return monarchy[tier];
+        if (modern && s.form === "Union") return rw(modernUnion);
+        if (modern && s.form === "Theocracy") return rw({ Theocracy: 20, "Holy State": 2, Thearchy: 1 });
+
         if (s.form === "Monarchy") {
           const form = monarchy[tier];
           // Default name depends on exponent tier, some culture bases have special names for tiers
@@ -921,7 +958,7 @@ class StatesModule {
             }
             if (P(0.3)) return "City-state";
           }
-          return rw(republic);
+          return rw(modern ? modernRepublic : republic);
         }
 
         if (s.form === "Union") return rw(union);
@@ -981,8 +1018,10 @@ class StatesModule {
     // a vassal already named as a kind of subject, such as a Protectorate, is that kind
     const named = Object.entries(SUBJECT_TYPES).find(([, type]) => type.names.includes(state.formName ?? ""));
     if (named && named[0] !== "Vassal") return named[0];
+    const setting = options.generation?.states?.setting;
     const weights = Object.entries(SUBJECT_TYPES)
       .filter(([, type]) => !type.subjectForm || type.subjectForm === state.form)
+      .filter(([, type]) => !type.setting || type.setting === setting)
       .map(([name, type]) => {
         let weight = type.weights[overlord.form ?? ""] ?? 0;
         if (name === "Union Republic" && overlord.formName === "Soviet Union") weight *= 3;

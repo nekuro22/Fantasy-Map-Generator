@@ -197,7 +197,12 @@ export const optionsSchema = z.strictObject({
       sizeVariety: nonNegative,
       growthRate: nonNegative
     }),
-    states: z.strictObject({ limit: count, sizeVariety: nonNegative, growthRate: nonNegative }),
+    states: z.strictObject({
+      limit: count,
+      sizeVariety: nonNegative,
+      growthRate: nonNegative,
+      setting: z.enum(["medieval", "modern"]).default("medieval") // which forms of government and subjects states take
+    }),
     provinces: z.strictObject({ ratio: percent }),
     religions: z.strictObject({ limit: count }),
     burgs: z.strictObject({ limit: count }) // AUTO_BURG_LIMIT means "as many as the land supports"

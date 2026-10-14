@@ -94,7 +94,7 @@ class OptionsModel {
         resolveDepressionsSteps: 250,
         lakeElevationLimit: 20,
         cultures: { limit: 12, set: "world", sizeVariety: 4, growthRate: 1 },
-        states: { limit: 18, sizeVariety: 4, growthRate: 1 },
+        states: { limit: 18, sizeVariety: 4, growthRate: 1, setting: "medieval" },
         provinces: { ratio: 20 },
         religions: { limit: 6 },
         burgs: { limit: 1000 }

@@ -98,6 +98,11 @@ function renderTemplateEditor(): void {
           <option value="fractious">Fractious</option>
           <option value="manyContinents">Many Continents</option>
           <option value="fourContinents">Four Continents</option>
+          <option value="twoContinents">Two Continents</option>
+          <option value="threeContinents">Three Continents</option>
+          <option value="sixContinents">Six Continents</option>
+          <option value="continentsAndIslands">Continents and Islands</option>
+          <option value="mediterraneanWorld">Mediterranean World</option>
         </select>
       </div>
       <div id="templateTools">

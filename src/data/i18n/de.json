@@ -3192,5 +3192,14 @@
  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least {n}k tokens (Ollama's num_ctx).": "ⓘ Lokale Modelle brauchen keinen Schlüssel. Server angeben und Modellnamen eingeben. Das Kontextfenster des Servers auf mindestens {n}k Tokens setzen (num_ctx bei Ollama).",
  "🔑 Connect your AI key": "🔑 KI-Schlüssel verbinden",
  "Subject type": "Untertanen-Art",
- "Kind of subject a painted vassal becomes. Auto picks one that suits the overlord's form of government": "Art des Untertanen, die ein bemalter Vassal wird. Auto wählt eine, die zur Staatsform des Oberherrn passt"
+ "Kind of subject a painted vassal becomes. Auto picks one that suits the overlord's form of government": "Art des Untertanen, die ein bemalter Vassal wird. Auto wählt eine, die zur Staatsform des Oberherrn passt",
+ "Setting": "Epoche",
+ "Medieval": "Mittelalter",
+ "Modern": "Modern",
+ "Medieval: kingdoms, duchies, vassals. Modern: republics, federations, socialist states, puppets and protectorates": "Mittelalter: Königreiche, Herzogtümer, Vasallen. Modern: Republiken, Föderationen, sozialistische Staaten, Marionettenstaaten und Protektorate",
+ "Two Continents": "Zwei Kontinente",
+ "Three Continents": "Drei Kontinente",
+ "Six Continents": "Sechs Kontinente",
+ "Continents and Islands": "Kontinente und Inseln",
+ "Mediterranean World": "Mittelmeerwelt"
 }

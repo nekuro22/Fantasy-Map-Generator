@@ -96,6 +96,11 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     parse: Number,
     pin: "statesNumber"
   }),
+  statesSetting: option({
+    read: o => o.generation.states.setting,
+    write: (o, value) => (o.generation.states.setting = value === "modern" ? "modern" : "medieval"),
+    parse: String
+  }),
   provincesRatio: option({
     read: o => o.generation.provinces.ratio,
     write: (o, value) => (o.generation.provinces.ratio = value),
@@ -302,6 +307,16 @@ const TEMPLATE = /* html */ `
       <td>States number</td>
       <td colspan="2">
         <slider-input id="statesNumber" data-option="statesNumber" min="0" max="100"></slider-input>
+      </td>
+    </tr>
+    <tr data-tip="Medieval: kingdoms, duchies, vassals. Modern: republics, federations, socialist states, puppets and protectorates">
+      <td></td>
+      <td>Setting</td>
+      <td colspan="2">
+        <select id="statesSetting" data-option="statesSetting">
+          <option value="medieval" selected>Medieval</option>
+          <option value="modern">Modern</option>
+        </select>
       </td>
     </tr>
     <tr

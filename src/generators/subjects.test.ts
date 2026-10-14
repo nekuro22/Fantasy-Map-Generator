@@ -14,7 +14,9 @@ const world = (overlordForm: string, overlordFormName: string) => ({
 });
 
 describe("subject types", () => {
-  beforeEach(() => vi.stubGlobal("options", { map: { seed: "subjects" } }));
+  beforeEach(() =>
+    vi.stubGlobal("options", { map: { seed: "subjects" }, generation: { states: { setting: "modern" } } })
+  );
 
   it("makes vassals the kind of subject their overlord's government makes", () => {
     vi.stubGlobal("pack", world("Socialist", "Soviet Union"));
@@ -33,5 +35,24 @@ describe("subject types", () => {
     expect(pack.states[2]).toMatchObject({ form: "Socialist", formName: "People's Republic" });
     expect(() => States.setSubjectType(2, "Friend", true)).toThrow("The subject type must be one of");
     expect(() => States.setSubjectType(1, "Puppet")).toThrow("is not a vassal");
+  });
+
+  it("keeps feudal kinds to the medieval setting and modern kinds to the modern one", () => {
+    const kinds = (setting: string) => {
+      vi.stubGlobal("options", { map: { seed: "subjects" }, generation: { states: { setting } } });
+      const found = new Set<string>();
+      for (let n = 0; n < 40; n++) {
+        vi.stubGlobal("options", { map: { seed: `subjects-${n}` }, generation: { states: { setting } } });
+        vi.stubGlobal("pack", world("Monarchy", "Empire"));
+        States.assignSubjects();
+        found.add(pack.states[2].subject!);
+      }
+      return found;
+    };
+    const medieval = kinds("medieval");
+    expect(medieval.has("Puppet") || medieval.has("Dominion")).toBe(false);
+    const modern = kinds("modern");
+    expect(modern.has("Vassal") || modern.has("Tributary")).toBe(false);
+    expect(modern.size).toBeGreaterThan(1);
   });
 });
