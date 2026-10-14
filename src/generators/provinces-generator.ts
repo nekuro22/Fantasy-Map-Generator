@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { max } from "d3";
+import { color as d3Color, max } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
@@ -33,6 +33,8 @@ export interface Province {
   cores?: number[];
   claims?: number[];
   controller?: number;
+  /** the region of its state it belongs to, see State.regions */
+  region?: number;
   history?: string;
   // statistics computed by the provinces editor
   area?: number;
@@ -82,6 +84,18 @@ class ProvinceModule {
       Dependency: 1,
       Area: 1
     }
+  };
+
+  /** Form names of regions, a tier above provinces, by form of government */
+  regionForms: Record<string, Record<string, number>> = {
+    Monarchy: { Duchy: 10, Principality: 2, Palatinate: 2, "Crown Land": 2, Archduchy: 1 },
+    Republic: { Region: 4, State: 2, Territory: 1 },
+    Federal: { Land: 6, State: 4 },
+    Union: { "Member State": 3, "Constituent Country": 1, Realm: 1 },
+    Theocracy: { Archdiocese: 3, Archbishopric: 2, Diocese: 1 },
+    Anarchy: { Federation: 1, Assembly: 1 },
+    Socialist: { "Federal District": 2, "Economic Region": 1, "Soviet Socialist Republic": 1 },
+    "Soviet Union": { "Soviet Socialist Republic": 6, "Federal District": 1 }
   };
 
   regenerate(regenerateNames = true): void {
@@ -340,6 +354,164 @@ class ProvinceModule {
     pack.provinces = provinces;
     this.addOwnerCores();
     this.generateOccupation();
+    this.generateRegions();
+  }
+
+  /** Group the provinces of each state into regions of about four neighboring provinces, such as duchies or
+   * federal lands; states with fewer than four provinces have none. Replaces all regions. Returns their number */
+  generateRegions(): number {
+    const { states, provinces, cells, burgs } = pack;
+    const random = Alea(`${options.map.seed}-regions`); // own sequence: the map's random stream stays untouched
+    const adjacent = new Map<number, Set<number>>();
+    for (const cell of cells.i) {
+      const a = cells.province[cell];
+      if (!a) continue;
+      for (const neighbor of cells.c[cell]) {
+        const b = cells.province[neighbor];
+        if (!b || a === b || cells.state[neighbor] !== cells.state[cell]) continue;
+        if (!adjacent.has(a)) adjacent.set(a, new Set());
+        adjacent.get(a)!.add(b);
+      }
+    }
+    const point = (p: Province) => cells.p?.[p.center] ?? [0, 0];
+    const distance = (a: Province, b: Province) => Math.hypot(point(a)[0] - point(b)[0], point(a)[1] - point(b)[1]);
+
+    let count = 0;
+    for (const state of states) {
+      if (!state.i || state.removed) continue;
+      delete state.regions;
+      const own = provinces.filter(p => p?.i && !p.removed && p.state === state.i);
+      for (const province of own) delete province.region;
+      if (own.length < 4) continue;
+
+      // seeds far apart, the capital's province first
+      const capitalProvince = state.capital && burgs[state.capital] ? cells.province[burgs[state.capital].cell] : 0;
+      const seeds = [own.find(p => p.i === capitalProvince) ?? own[0]];
+      const wanted = Math.max(2, Math.round(own.length / (3.5 + random())));
+      while (seeds.length < wanted) {
+        const farthest = own.reduce(
+          (best, p) => {
+            const d = Math.min(...seeds.map(seed => distance(seed, p)));
+            return d > best.d ? { p, d } : best;
+          },
+          { p: own[0], d: -1 }
+        );
+        if (farthest.d <= 0) break;
+        seeds.push(farthest.p);
+      }
+
+      // grow the regions in turns over neighboring provinces, so they stay compact and alike in size
+      const regionOf = new Map<number, number>(seeds.map((seed, index) => [seed.i, index + 1]));
+      const fronts = seeds.map(seed => [seed.i]);
+      let grown = true;
+      while (grown) {
+        grown = false;
+        fronts.forEach((front, index) => {
+          const next: number[] = [];
+          for (const id of front)
+            for (const neighbor of adjacent.get(id) ?? []) {
+              if (regionOf.has(neighbor)) continue;
+              regionOf.set(neighbor, index + 1);
+              next.push(neighbor);
+              grown = true;
+            }
+          fronts[index] = next;
+        });
+      }
+      // islands and exclaves join the nearest seed
+      for (const p of own) {
+        if (regionOf.has(p.i)) continue;
+        const nearest = seeds.reduce(
+          (best, seed, index) => (distance(seed, p) < distance(seeds[best], p) ? index : best),
+          0
+        );
+        regionOf.set(p.i, nearest + 1);
+      }
+
+      const formName = this.pickRegionForm(state, random);
+      state.regions = seeds.map((seed, index) => {
+        const name = seed.burg && burgs[seed.burg]?.name ? burgs[seed.burg].name! : seed.name;
+        const shade = d3Color(state.color ?? "#888888")
+          ?.brighter(((index % 3) - 1) * 0.45)
+          .formatHex();
+        return { i: index + 1, name, formName, fullName: getRegionFullName(name, formName), color: shade ?? "#888888" };
+      });
+      for (const p of own) p.region = regionOf.get(p.i);
+      count += seeds.length;
+    }
+    return count;
+  }
+
+  private pickRegionForm(state: { form?: string; formName?: string }, random: () => number): string {
+    const key =
+      state.formName === "Soviet Union"
+        ? "Soviet Union"
+        : ["Federal Republic", "Federation", "Socialist Federation", "United States"].includes(state.formName ?? "")
+          ? "Federal"
+          : (state.form ?? "Monarchy");
+    const weights = Object.entries(this.regionForms[key] ?? this.regionForms.Republic);
+    const total = weights.reduce((sum, [, weight]) => sum + weight, 0);
+    let roll = random() * total;
+    for (const [name, weight] of weights) {
+      roll -= weight;
+      if (roll < 0) return name;
+    }
+    return weights[0][0];
+  }
+
+  /** Put a province into a region of its state; 0 takes it out of any */
+  setRegion(provinceId: number, regionId: number): void {
+    const province = this.living(provinceId);
+    if (!regionId) {
+      delete province.region;
+      return;
+    }
+    if (!this.region(province.state, regionId)) throw new Error(`State ${province.state} has no region ${regionId}`);
+    province.region = regionId;
+  }
+
+  /** Found a region in a state, with a name and a form such as Duchy or Land. Returns its id */
+  addRegion(stateId: number, name: string, formName = "Region"): number {
+    this.requireState(stateId);
+    const state = pack.states[stateId];
+    state.regions ??= [];
+    const regions = state.regions;
+    const i = Math.max(0, ...regions.map(r => r.i)) + 1;
+    const regionName = requireName(name);
+    const color = getMixedColor(state.color ?? "#888888", 0.35, 0);
+    regions.push({ i, name: regionName, formName, fullName: getRegionFullName(regionName, formName), color });
+    return i;
+  }
+
+  /** Rename a region and set its form, such as Duchy, Land or Oblast; the full name follows */
+  renameRegion(stateId: number, regionId: number, name: string, formName?: string): void {
+    const region = this.region(stateId, regionId);
+    if (!region) throw new Error(`State ${stateId} has no region ${regionId}`);
+    region.name = requireName(name);
+    if (formName !== undefined) region.formName = formName.trim();
+    region.fullName = getRegionFullName(region.name, region.formName);
+  }
+
+  /** Set a region's color */
+  recolorRegion(stateId: number, regionId: number, color: string): void {
+    const region = this.region(stateId, regionId);
+    if (!region) throw new Error(`State ${stateId} has no region ${regionId}`);
+    region.color = requireColor(color);
+  }
+
+  /** Remove a region; its provinces belong to none */
+  removeRegion(stateId: number, regionId: number): void {
+    const state = pack.states[stateId];
+    if (!this.region(stateId, regionId)) throw new Error(`State ${stateId} has no region ${regionId}`);
+    state.regions = state.regions!.filter(r => r.i !== regionId);
+    if (!state.regions.length) delete state.regions;
+    for (const province of pack.provinces)
+      if (province?.state === stateId && province.region === regionId) delete province.region;
+  }
+
+  /** A living region of a state */
+  region(stateId: number, regionId: number) {
+    return pack.states[stateId]?.regions?.find(r => r.i === regionId && !r.removed);
   }
 
   /** Rename a province; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
@@ -402,6 +574,7 @@ class ProvinceModule {
     if (from?.provinces) from.provinces = from.provinces.filter(id => id !== provinceId);
     to.provinces = [...(to.provinces ?? []), provinceId];
     province.state = stateId;
+    delete province.region; // regions belong to one state
     if (province.controller === stateId) delete province.controller;
     States.findNeighbors();
     States.collectStatistics();
@@ -546,14 +719,18 @@ class ProvinceModule {
     this.getPoles();
   }
 
-  /** Set a state's claim on a province, as in Hearts of Iron: "core" (land it sees as its own), "claim" or "none" */
+  /** Set a state's claim on a province, as in Hearts of Iron: "core" (land it sees as its own), "claim" or "none".
+   * A province is the core of one state only: a previous core holder keeps a claim on it */
   setClaim(provinceId: number, stateId: number, kind: string): void {
     const province = this.living(provinceId);
     this.requireState(stateId);
     requireOneOf(kind, CLAIM_KINDS, "The claim");
     province.cores = (province.cores ?? []).filter(id => id !== stateId);
     province.claims = (province.claims ?? []).filter(id => id !== stateId);
-    if (kind === "core") province.cores.push(stateId);
+    if (kind === "core") {
+      province.claims.push(...province.cores);
+      province.cores = [stateId];
+    }
     if (kind === "claim") province.claims.push(stateId);
     tidyClaims(province);
   }
@@ -582,11 +759,11 @@ class ProvinceModule {
     return province.controller || province.state;
   }
 
-  /** Give each state a core on every province it owns. Returns the number of cores added */
+  /** Give each state a core on every province it owns that is nobody's core yet. Returns the number of cores added */
   addOwnerCores(): number {
     let added = 0;
     for (const province of pack.provinces) {
-      if (!province?.i || province.removed || !province.state || province.cores?.includes(province.state)) continue;
+      if (!province?.i || province.removed || !province.state || province.cores?.length) continue;
       this.setClaim(province.i, province.state, "core");
       added++;
     }
@@ -600,20 +777,7 @@ class ProvinceModule {
     const random = Alea(`${options.map.seed}-occupation`); // own sequence: the map's random stream stays untouched
     for (const province of provinces) if (province?.i) delete province.controller;
 
-    const contact = new Map<number, Map<number, number>>(); // province → neighbor state → shared cell edges
-    for (const cell of cells.i) {
-      const province = cells.province[cell];
-      if (!province) continue;
-      for (const neighbor of cells.c[cell]) {
-        const state = cells.state[neighbor];
-        if (!state || state === cells.state[cell]) continue;
-        const byState = contact.get(province) ?? new Map<number, number>();
-        byState.set(state, (byState.get(state) ?? 0) + 1);
-        contact.set(province, byState);
-      }
-    }
-    const strength = (state: { rural?: number; urban?: number }) =>
-      Math.max((state.rural ?? 0) + (state.urban ?? 0), 1);
+    const contact = this.getContact();
     const capitalProvince = (state: { capital?: number }) =>
       state.capital && burgs[state.capital] ? cells.province[burgs[state.capital].cell] : 0;
     const occupy = (holder: number, owner: number, share: number, minimum: number) => {
@@ -637,6 +801,89 @@ class ProvinceModule {
         if (ratio < 1.3) occupied += occupy(weak.i, strong.i, 0.1, random() < 0.5 ? 1 : 0); // an even war: both sides hold ground
       }
     return occupied;
+  }
+
+  /** Claims as nations make them, replacing all claims and foreign cores (owner cores stay):
+   * a neighbor whose people live in a province holds a core on it, rivals and enemies claim border provinces,
+   * an occupier claims what it holds. Returns the number of claims and cores added */
+  generateClaims(): number {
+    const { states, provinces, cells } = pack;
+    const random = Alea(`${options.map.seed}-claims`); // own sequence: the map's random stream stays untouched
+    for (const province of provinces) {
+      if (!province?.i || province.removed) continue;
+      if (province.cores) province.cores = province.cores.filter(id => id === province.state);
+      delete province.claims;
+      tidyClaims(province);
+    }
+
+    const contact = this.getContact();
+    const people = new Map<number, Map<number, number>>(); // province → culture → population
+    for (const cell of cells.i) {
+      const [province, culture] = [cells.province[cell], cells.culture?.[cell]];
+      if (!province || !culture) continue;
+      const byCulture = people.get(province) ?? new Map<number, number>();
+      byCulture.set(culture, (byCulture.get(culture) ?? 0) + (cells.pop?.[cell] || 0.1));
+      people.set(province, byCulture);
+    }
+    const mainCulture = (provinceId: number) => {
+      let [best, most] = [0, 0];
+      for (const [culture, pop] of people.get(provinceId) ?? []) if (pop > most) [best, most] = [culture, pop];
+      return best;
+    };
+
+    let added = 0;
+    const add = (province: Province, stateId: number, kind: "core" | "claim") => {
+      if (stateId === province.state || province.cores?.includes(stateId)) return;
+      if (kind === "core" && province.cores?.length) kind = "claim";
+      if (kind === "claim" && province.claims?.includes(stateId)) return;
+      this.setClaim(province.i, stateId, kind);
+      added++;
+    };
+    const chance: Record<string, number> = { Enemy: 0.6, Rival: 0.4, Suspicion: 0.15 };
+    const capitalProvince = (state: { capital?: number }) =>
+      state.capital && pack.burgs[state.capital] ? cells.province[pack.burgs[state.capital].cell] : 0;
+
+    for (const province of provinces) {
+      if (!province?.i || province.removed || !province.state) continue;
+      const owner = states[province.state];
+      const culture = mainCulture(province.i);
+      for (const [stateId] of [...(contact.get(province.i) ?? [])].sort((a, b) => a[0] - b[0])) {
+        const neighbor = states[stateId];
+        if (!neighbor || neighbor.removed) continue;
+        // their people live there: often the neighbor's lost homeland (its core; the owner keeps a claim), else a claim
+        if (culture && neighbor.culture === culture && owner.culture !== culture) {
+          const homeland = province.i !== capitalProvince(owner) && random() < 0.5;
+          if (homeland) {
+            this.setClaim(province.i, stateId, "core");
+            added++;
+          } else add(province, stateId, "claim");
+        } else if (
+          random() < (chance[neighbor.diplomacy?.[province.state] ?? ""] ?? 0) &&
+          strength(neighbor) * 2 >= strength(owner)
+        )
+          add(province, stateId, "claim");
+      }
+      if (province.controller) add(province, province.controller, "claim");
+    }
+    return added;
+  }
+
+  /** Province → neighbor state → number of cell edges they share */
+  private getContact(): Map<number, Map<number, number>> {
+    const { cells } = pack;
+    const contact = new Map<number, Map<number, number>>();
+    for (const cell of cells.i) {
+      const province = cells.province[cell];
+      if (!province) continue;
+      for (const neighbor of cells.c[cell]) {
+        const state = cells.state[neighbor];
+        if (!state || state === cells.state[cell]) continue;
+        const byState = contact.get(province) ?? new Map<number, number>();
+        byState.set(state, (byState.get(state) ?? 0) + 1);
+        contact.set(province, byState);
+      }
+    }
+    return contact;
   }
 
   /** End the occupations between two states, as at peace */
@@ -671,6 +918,14 @@ class ProvinceModule {
         province.claims = [...new Set(province.claims.map(valid))].filter(id => id && !province.cores?.includes(id));
       if (province.controller) province.controller = valid(province.controller);
       if (province.controller === province.state) delete province.controller;
+      if (province.region && !this.region(province.state, province.region)) delete province.region;
+      if (province.cores && province.cores.length > 1) {
+        // one core per province: the owner's if it has one, else the first; the others keep a claim
+        const core = province.cores.includes(province.state) ? province.state : province.cores[0];
+        const rest = province.cores.filter(id => id !== core && !province.claims?.includes(id));
+        province.cores = [core];
+        province.claims = [...(province.claims ?? []), ...rest];
+      }
       tidyClaims(province);
     }
   }
@@ -697,6 +952,12 @@ class ProvinceModule {
     });
   }
 }
+
+/** "Duchy of Vel", "Land Vel" */
+export const getRegionFullName = (name: string, formName: string): string =>
+  !formName ? name : formName === "Land" ? `${formName} ${name}` : `${formName} of ${name}`;
+
+const strength = (state: { rural?: number; urban?: number }) => Math.max((state.rural ?? 0) + (state.urban ?? 0), 1);
 
 function tidyClaims(province: Province): void {
   if (!province.cores?.length) delete province.cores;

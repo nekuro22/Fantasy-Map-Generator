@@ -37,6 +37,10 @@ Im Provinz-Editor (*Tools → Provinces*):
   Besetzte Provinzen werden auf der Ebene „Provinces“ in der Farbe des Besatzers schraffiert.
 - Spalte **Claims:** Klick auf das Fahnen-Symbol öffnet einen Dialog, in dem du für jeden Staat Core, Claim oder nichts setzt.
 - **Schild-Knopf** unten: gibt jedem Staat einen Kernanspruch auf alle Provinzen, die er besitzt.
+- Eine Provinz hat höchstens **einen** Core-Staat; jeder weitere Anspruch ist ein Claim.
+- Spalte **Region** und Knopf „Regionen“: Provinzen zu Regionen (Herzogtümer, Bundesländer) eines Staates gruppieren.
+- **Claims & Fronts** (Shift+I oder Tools → Claims): pro Staat Cores, besetzte Gebiete und Ansprüche, dazu Frontlinien und Pulverfass-Karte.
+- Im **Diplomacy Overview** hat jeder Untertan eine Art (Vassal, Dominion, Protectorate, Puppet, Satellite, Mandate …), die zur Staatsform des Oberherrn passt.
 - Der CSV-Export der Provinzen enthält Controller, Cores und Claims.
 
 **Alles wird automatisch vergeben:**
@@ -142,7 +146,7 @@ fmg --help
 - Karten aus dem Original lassen sich hier ohne Änderung öffnen.
 - Karten aus diesem Fork lassen sich im Original öffnen. Das Original behält die neuen Werte in der Datei,
   zeigt Ansprüche und Besatzungen aber nicht an und behandelt die Staatsform „Socialist“ wie eine Monarchie.
-- Das Dateiformat ist unverändert; neu sind nur die optionalen Felder `cores`, `claims`, `controller` und `history`
+- Das Dateiformat ist unverändert; neu sind nur die optionalen Felder `cores`, `claims`, `controller`, `history`, `region` (Provinz) sowie `regions` und `subject` (Staat)
   (beschrieben in [docs/architecture/data-model.md](docs/architecture/data-model.md)).
 
 ## Lizenz und Urheber

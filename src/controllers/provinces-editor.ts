@@ -79,6 +79,14 @@ const columns: EditorColumn<Province>[] = [
     sortType: "alpha"
   },
   {
+    key: "region",
+    label: "Region",
+    width: "8em",
+    mobileHidden: true,
+    sortBy: province => Provinces.region(province.state, province.region ?? 0)?.name || "",
+    sortType: "alpha"
+  },
+  {
     key: "controller",
     label: "Controller",
     width: "7em",
@@ -195,8 +203,13 @@ function renderDialog(): void {
           class="icon-button-bombardment"
         ></button>
         <button
+          id="provincesRegions"
+          data-tip="Regions of the selected state: groups of provinces such as duchies or federal lands"
+          class="icon-object-ungroup"
+        ></button>
+        <button
           id="provincesOwnerCores"
-          data-tip="Give every state a core on each province it owns"
+          data-tip="Give every state a core on each province it owns that is nobody's core yet. A province is the core of one state only"
           class="icon-shield-alt"
         ></button>
         <button
@@ -238,6 +251,7 @@ function renderDialog(): void {
   ensureEl("provincesAdd").addEventListener("click", enterAddProvinceMode);
   ensureEl("provincesMerge").addEventListener("click", openProvinceMergeDialog);
   ensureEl("provincesOwnerCores").addEventListener("click", addOwnerCores);
+  ensureEl("provincesRegions").addEventListener("click", editRegions);
   ensureEl("provincesOccupation").addEventListener("click", generateOccupation);
   ensureEl("provincesAnnex").addEventListener("click", provincesAnnex.toggle);
   ensureEl("provincesRecolor").addEventListener("click", recolorProvinces);
@@ -277,6 +291,7 @@ function renderDialog(): void {
     const p = +line.dataset.id!;
     if (cl.contains("cultureBase")) changeCapital(p, line, el.value);
     else if (cl.contains("provinceController")) changeController(p, +el.value);
+    else if (cl.contains("provinceRegion")) changeRegion(p, +el.value);
   });
 }
 
@@ -370,6 +385,7 @@ function renderProvincesPage(view: TableView<Province>): void {
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase ${p.burgs!.length ? "" : "placeholder"}">${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}</select>
       </div>
       <input data-col="state" data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled>
+      <select data-col="region" data-tip="Region of the state the province belongs to, such as a duchy or a federal land" class="provinceRegion">${getRegionOptions(p)}</select>
       <select data-col="controller" data-tip="State holding the province. Pick another state to mark the province as occupied by it" class="provinceController"${p.controller ? ' style="color: #b30000"' : ""}>${getControllerOptions(p)}</select>
       <div data-col="claims">
         <span data-tip="${claimsTip}" class="icon-flag pointer provinceClaims"></span>
@@ -430,6 +446,115 @@ function getControllerOptions(province: Province): string {
     .join("");
 }
 
+function getRegionOptions(province: Province): string {
+  const regions = (pack.states[province.state]?.regions ?? []).filter(r => !r.removed);
+  const none = `<option value="0">—</option>`;
+  return (
+    none +
+    regions
+      .map(r => `<option value="${r.i}" ${r.i === province.region ? "selected" : ""}>${r.fullName}</option>`)
+      .join("")
+  );
+}
+
+function changeRegion(provinceId: number, regionId: number): void {
+  try {
+    Provinces.setRegion(provinceId, regionId);
+  } catch (error) {
+    tip(errorText(error), false, "error");
+  }
+  Layers.draw("provinces");
+  refreshProvincesEditor();
+}
+
+/** Rename, reshape and recolor the regions of the filtered state, add and remove them */
+function editRegions(): void {
+  const stateId = filterState.stateId > 0 ? filterState.stateId : pack.states.find(s => s.i && !s.removed)?.i;
+  const state = stateId ? pack.states[stateId] : undefined;
+  if (!state) {
+    tip("Select a state in the filter first", false, "warn");
+    return;
+  }
+  const render = () => {
+    const regions = (state.regions ?? []).filter(r => !r.removed);
+    const count = (id: number) =>
+      pack.provinces.filter(p => p?.i && !p.removed && p.state === stateId && p.region === id).length;
+    const rows = regions
+      .map(
+        r => /* html */ `<div class="regionRow" data-id="${r.i}" style="display: flex; gap: .4em; align-items: center; padding: 1px 0">
+          <input type="color" value="${r.color}" class="regionColor" data-tip="Region color" style="width: 2em; height: 1.4em; padding: 0" />
+          <input value="${r.name}" class="regionName notranslate" data-tip="Region name" style="width: 9em" />
+          <input value="${r.formName}" class="regionForm" list="regionForms" data-tip="Region form, such as Duchy, Land or Oblast" style="width: 9em" />
+          <span data-tip="Provinces in the region" style="width: 2.5em; text-align: right">${count(r.i)}</span>
+          <span class="icon-trash-empty pointer regionRemove" data-tip="Remove the region; its provinces belong to none"></span>
+        </div>`
+      )
+      .join("");
+    const forms = [...new Set(Object.values(Provinces.regionForms).flatMap(f => Object.keys(f)))]
+      .map(f => `<option value="${f}"></option>`)
+      .join("");
+    ensureEl("alertMessage").innerHTML =
+      /* html */ `<p style="margin-top: 0">Regions group provinces of a state, like duchies or federal lands. Pick a province's region in the Region column.</p>
+      <datalist id="regionForms">${forms}</datalist>
+      <div id="regionsList" style="max-height: 22em; overflow-y: auto">${rows || "<i>No regions</i>"}</div>`;
+    ensureEl("regionsList").addEventListener("change", event => {
+      const el = event.target as HTMLInputElement;
+      const row = el.closest<HTMLElement>(".regionRow");
+      if (!row) return;
+      const id = +row.dataset.id!;
+      try {
+        if (el.classList.contains("regionColor")) Provinces.recolorRegion(stateId!, id, el.value);
+        else {
+          const name = row.querySelector<HTMLInputElement>(".regionName")!.value;
+          const form = row.querySelector<HTMLInputElement>(".regionForm")!.value;
+          Provinces.renameRegion(stateId!, id, name, form);
+        }
+      } catch (error) {
+        tip(errorText(error), false, "error");
+      }
+    });
+    ensureEl("regionsList").addEventListener("click", event => {
+      const el = event.target as HTMLElement;
+      if (!el.classList.contains("regionRemove")) return;
+      Provinces.removeRegion(stateId!, +el.closest<HTMLElement>(".regionRow")!.dataset.id!);
+      render();
+    });
+  };
+  render();
+
+  $("#alert").dialog({
+    resizable: false,
+    title: `${translate("Regions")}: ${state.fullName || state.name}`,
+    width: "auto",
+    buttons: {
+      Add: () => {
+        Provinces.addRegion(stateId!, `${state.name} ${(state.regions?.length ?? 0) + 1}`);
+        render();
+      },
+      Regenerate: () => {
+        confirmationDialog({
+          title: "Regenerate regions",
+          message: "Group the provinces of all states into new regions? All regions are replaced",
+          confirm: "Regenerate",
+          onConfirm: () => {
+            Provinces.generateRegions();
+            Layers.draw("provinces");
+            refreshProvincesEditor();
+          }
+        });
+      },
+      Close: function (this: HTMLElement) {
+        $(this).dialog("close");
+      }
+    },
+    close: () => {
+      Layers.draw("provinces");
+      refreshProvincesEditor();
+    },
+    position: { my: "center", at: "center", of: "svg" }
+  });
+}
+
 function changeController(provinceId: number, stateId: number): void {
   try {
     Provinces.setController(provinceId, stateId);
@@ -459,8 +584,16 @@ function editClaims(provinceId: number): void {
       </div>`;
     })
     .join("");
-  alertMessage.innerHTML = /* html */ `<p style="margin-top: 0">A core is land a state sees as its own; a claim is land it only demands.</p>
+  alertMessage.innerHTML = /* html */ `<p style="margin-top: 0">A core is land a state sees as its own, and a province is the core of one state only; a claim is land a state only demands.</p>
     <div id="provinceClaimsList" style="max-height: 20em; overflow-y: auto">${rows}</div>`;
+  // a province is the core of one state only: a new core turns the old one into a claim
+  ensureEl("provinceClaimsList").addEventListener("change", event => {
+    const changed = event.target as HTMLSelectElement;
+    if (changed.value !== "core") return;
+    for (const other of ensureEl("provinceClaimsList").querySelectorAll<HTMLSelectElement>("select")) {
+      if (other !== changed && other.value === "core") other.value = "claim";
+    }
+  });
 
   $("#alert").dialog({
     resizable: false,
@@ -516,7 +649,7 @@ function generateOccupation(): void {
 
 function addOwnerCores(): void {
   const added = Provinces.addOwnerCores();
-  tip(added ? `Added ${added} cores` : "Every state already has cores on its provinces", false, "success");
+  tip(added ? `Added ${added} cores` : "Every province already is a core of a state", false, "success");
   refreshProvincesEditor();
 }
 

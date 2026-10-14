@@ -12,6 +12,9 @@ const TEMPLATE = /* html */ `
     <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview" data-shortcut="Shift + T">
       Burgs
     </button>
+    <button id="overviewClaimsButton" data-tip="Click to open Claims & Fronts: cores, claims, occupation and front lines" data-shortcut="Shift + I">
+      Claims
+    </button>
     <button
       id="editCoastlineSettings"
       data-tip="Click to open Coastline Editor"

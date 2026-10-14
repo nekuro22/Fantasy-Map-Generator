@@ -1,5 +1,7 @@
+import Alea from "alea";
 import { mean, median, quadtree, sum } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
+import { SUBJECT_TYPES } from "@/data/subjects";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
@@ -66,6 +68,19 @@ export interface State {
   treasury: number;
   label?: Label;
   note?: string;
+  /** the kind of subject a vassal is to its overlord, from SUBJECT_TYPES */
+  subject?: string;
+  regions?: Region[];
+}
+
+/** A group of provinces of one state, such as a duchy or a federal land; provinces point to it by `region` */
+export interface Region {
+  i: number;
+  name: string;
+  formName: string;
+  fullName: string;
+  color: string;
+  removed?: boolean;
 }
 
 interface Campaign {
@@ -80,6 +95,7 @@ interface Campaign {
 export const STATE_FORMS = {
   Monarchy: [
     "Beylik",
+    "Crown Colony",
     "Despotate",
     "Dominion",
     "Duchy",
@@ -87,32 +103,45 @@ export const STATE_FORMS = {
     "Empire",
     "Horde",
     "Grand Duchy",
+    "Grand Principality",
     "Heptarchy",
+    "Hetmanate",
     "Khaganate",
     "Khanate",
     "Kingdom",
     "Marches",
+    "Margraviate",
     "Principality",
     "Satrapy",
     "Shogunate",
     "Sultanate",
     "Tsardom",
     "Ulus",
-    "Viceroyalty"
+    "Viceroyalty",
+    "Voivodeship"
   ],
   Republic: [
+    "Associated State",
+    "Autonomous Republic",
     "Chancellery",
     "City-state",
+    "Colony",
     "Democratic Republic",
     "Diarchy",
     "Federal Republic",
     "Federation",
     "Free City",
+    "Free State",
+    "Governorate",
     "Junta",
+    "Mandate",
+    "Military Administration",
     "Most Serene Republic",
     "Oligarchy",
     "Protectorate",
+    "Reichskommissariat",
     "Republic",
+    "Territory",
     "Tetrarchy",
     "Trade Company",
     "Triumvirate"
@@ -146,18 +175,23 @@ export const STATE_FORMS = {
     "Holy State",
     "Imamah",
     "Patriarchate",
+    "Prelature",
+    "Prince-Bishopric",
     "See",
     "Thearchy",
     "Theocracy"
   ],
   Anarchy: ["Commune", "Community", "Council", "Free Territory", "Tribes"],
   Socialist: [
+    "Autonomous Soviet Socialist Republic",
     "Commissariat",
+    "People's Commune",
     "People's Democratic Republic",
     "People's Republic",
     "Socialist Federation",
     "Socialist Republic",
     "Soviet Republic",
+    "Soviet Socialist Republic",
     "Soviet Union",
     "Workers' Republic"
   ]
@@ -919,6 +953,63 @@ class StatesModule {
       s.salesTax = taxes.salesTax;
       s.pollTax = taxes.pollTax;
     }
+    this.assignSubjects(list);
+  }
+
+  /** The overlord of a vassal, or 0 */
+  getOverlord(stateId: number): number {
+    const index = pack.states[stateId]?.diplomacy?.indexOf("Vassal") ?? -1;
+    return index > 0 ? index : 0;
+  }
+
+  /** Give each vassal a kind of subject that suits its overlord's form of government, and the name to go with it */
+  assignSubjects(list: number[] | null = null): void {
+    for (const state of pack.states) {
+      if (!state.i || state.removed || state.lock || (list && !list.includes(state.i))) continue;
+      const overlord = this.getOverlord(state.i);
+      if (!overlord) {
+        delete state.subject;
+        continue;
+      }
+      const random = Alea(`${options.map.seed}-subject-${state.i}`); // own sequence: the map's random stream stays untouched
+      this.setSubjectType(state.i, this.pickSubjectType(state.i, overlord, random), true, random);
+    }
+  }
+
+  private pickSubjectType(stateId: number, overlordId: number, random: () => number): string {
+    const [state, overlord] = [pack.states[stateId], pack.states[overlordId]];
+    // a vassal already named as a kind of subject, such as a Protectorate, is that kind
+    const named = Object.entries(SUBJECT_TYPES).find(([, type]) => type.names.includes(state.formName ?? ""));
+    if (named && named[0] !== "Vassal") return named[0];
+    const weights = Object.entries(SUBJECT_TYPES)
+      .filter(([, type]) => !type.subjectForm || type.subjectForm === state.form)
+      .map(([name, type]) => {
+        let weight = type.weights[overlord.form ?? ""] ?? 0;
+        if (name === "Union Republic" && overlord.formName === "Soviet Union") weight *= 3;
+        return [name, weight] as const;
+      })
+      .filter(([, weight]) => weight > 0);
+    const total = weights.reduce((sum, [, weight]) => sum + weight, 0);
+    let roll = random() * total;
+    for (const [name, weight] of weights) {
+      roll -= weight;
+      if (roll < 0) return name;
+    }
+    return "Vassal";
+  }
+
+  /** Set the kind of subject a vassal is; `rename` gives it a form name of that kind, if the kind has any */
+  setSubjectType(stateId: number, type: string, rename = false, random: () => number = Math.random): void {
+    const state = this.living(stateId);
+    requireOneOf(type, Object.keys(SUBJECT_TYPES), "The subject type");
+    if (!this.getOverlord(stateId)) throw new Error(`State ${stateId} is not a vassal of another state`);
+    state.subject = type;
+    const { names } = SUBJECT_TYPES[type];
+    if (!rename || !names.length || random() > (type === "Vassal" ? 0.4 : 0.8)) return;
+    const formName = names[Math.floor(random() * names.length)];
+    state.formName = formName;
+    state.form = getStateForm(formName) ?? state.form;
+    state.fullName = this.getFullName(state);
   }
 
   defineTaxRates(state: State) {
@@ -950,8 +1041,11 @@ class StatesModule {
       "Horde",
       "Marches",
       "Soviet Union",
-      "Socialist Federation"
+      "Socialist Federation",
+      "Soviet Socialist Republic",
+      "Autonomous Soviet Socialist Republic"
     ];
+    if (state.formName === "Reichskommissariat") return `${state.formName} ${state.name}`;
     if (!state.formName) return state.name;
     if (!state.name && state.formName) return `The ${state.formName}`;
     const adjName = adjForms.includes(state.formName) && !/-| /.test(state.name);
@@ -1029,6 +1123,11 @@ class StatesModule {
     object.diplomacy[stateId] = getInverseRelation(relation); // an unchanged relation still repairs its inverse
     if (old === "Enemy" && relation !== "Enemy") Provinces.endOccupation(stateId, otherId);
     if (old === relation) return;
+    // a new vassal becomes the kind of subject its overlord makes; a former one is free of it
+    const vassal = relation === "Vassal" ? subject : relation === "Suzerain" ? object : null;
+    const former = old === "Vassal" ? subject : old === "Suzerain" ? object : null;
+    if (former && former !== vassal && !this.getOverlord(former.i)) delete former.subject;
+    if (vassal) this.assignSubjects([vassal.i]);
     this.getChronicle().push(this.getRelationRecord(stateId, otherId, old, relation));
   }
 

@@ -147,6 +147,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.DiplomacyOverview.open()
   },
   {
+    id: "overviewClaimsButton",
+    name: "Open Claims & Fronts",
+    aliases: "cores claims occupation fronts irredenta hearts of iron",
+    run: () => Controllers.ClaimsOverview.open()
+  },
+  {
     id: "overviewFeaturesButton",
     name: "Open Geographical Features Overview",
     aliases: "islands lakes oceans landmasses water bodies continents",

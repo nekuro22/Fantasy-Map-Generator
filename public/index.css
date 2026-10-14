@@ -3089,3 +3089,26 @@ body.tour-free-roam * {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Claims & Fronts */
+#claimsOverview .claimsModes { display: flex; gap: 0.3em; margin-bottom: 0.4em; }
+#claimsOverview .claimsModes button { flex: 1; }
+#claimsOverview .claimsFocus { margin: 0.3em 0; line-height: 1.5; max-width: 42em; }
+#claimsOverview .claimsFocusName { font-weight: bold; font-size: 1.1em; display: flex; align-items: center; gap: 0.3em; }
+#claimsOverview .claimsFact { margin-right: 0.8em; white-space: nowrap; }
+#claimsOverview .claimsWars { color: #b71c1c; }
+#claimsOverview .claimsLegend { display: flex; flex-wrap: wrap; gap: 0.2em 0.8em; margin: 0.3em 0 0.5em; max-width: 42em; font-size: 0.9em; }
+.claimsLegendItem { display: inline-flex; align-items: center; gap: 0.3em; white-space: nowrap; }
+.claimsLegendItem i { display: inline-block; width: 1.1em; height: 0.8em; border-radius: 2px; }
+#claimsOverview .claimsTable { max-height: 45vh; overflow-y: auto; }
+#claimsOverview table, .claimsDisputes table { border-collapse: collapse; font-size: 0.9em; }
+#claimsOverview th { position: sticky; top: 0; background: var(--bg-light, #f1f1f1); cursor: pointer; padding: 0.2em 0.4em; white-space: nowrap; }
+#claimsOverview td { padding: 0.15em 0.4em; text-align: right; }
+#claimsOverview td.zero { opacity: 0.35; }
+#claimsOverview td.claimsName { text-align: left; white-space: nowrap; max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
+#claimsOverview tr[data-id] { cursor: pointer; }
+#claimsOverview tr[data-id]:hover, .claimsDisputes tr:hover { background: rgba(0, 0, 0, 0.07); }
+#claimsOverview tr.selected { background: rgba(63, 155, 74, 0.25); }
+.claimsDisputes td { padding: 0.2em 0.4em; white-space: nowrap; }
+.claimsDisputes .claimsScore { font-weight: bold; color: #b71c1c; text-align: right; }
+.claimsDisputes .claimsReasons { white-space: normal; }

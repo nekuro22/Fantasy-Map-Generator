@@ -246,10 +246,13 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `urban`: `number` - urban (burg) population of state province. In population points
 - `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `label`: `Label` - optional Province-label overrides. If absent, the renderer derives the text and path from Province data
-- `cores`: `number[]` - optional. Ids of states holding a core on the province: land they see as their own, as in Hearts of Iron. The owner has no core unless listed
+- `cores`: `number[]` - optional. At most one id: the single state holding a core on the province (land it sees as its own, as in Hearts of Iron). Setting a core replaces the previous one, which becomes a claim
 - `claims`: `number[]` - optional. Ids of states claiming the province without a core. A state is never in both lists
 - `controller`: `number` - optional. Id of the state occupying the province; absent when the owner holds it. Occupied provinces are hatched in the occupier's color. Claims and occupations by removed states are dropped, those of merged states pass to the ruling state
-- Claims are assigned automatically: generation gives every owner a core on its provinces and derives occupation from the wars in the diplomacy (`Provinces.generateOccupation`, a seeded sequence of its own); a province changing hands keeps its cores, so the former owner still claims it; peace between two states ends their occupations; maps from before claims get owner cores on load
+- Claims are assigned automatically: generation gives every owner a core on its provinces and derives occupation from the wars in the diplomacy (`Provinces.generateOccupation`, a seeded sequence of its own); a province changing hands keeps its cores, so the former owner still claims it; peace between two states ends their occupations; maps from before claims get owner cores on load; `Provinces.generateClaims` adds claims and foreign homeland cores from culture, relations and strength (seeded, own sequence)
+- `region`: `number` - optional. Id of the province's region in its state's `regions`
+- State `regions`: `{i, name, form, color, seat}[]` - groups of provinces (duchies, federal lands) inside one state, made by `Provinces.generateRegions`
+- State `subject`: `string` - optional. Kind of subjection (Vassal, Dominion, Protectorate, Puppet, ...) when the state is a subject; catalog in `src/data/subjects.ts`
 - `history`: `string` - optional. Free-text history of the province, plain text
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed

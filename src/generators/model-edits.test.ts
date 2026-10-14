@@ -346,6 +346,13 @@ describe("States", () => {
     expect(pack.provinces[2]).toEqual({ i: 2, state: 3, cores: [3], claims: [1] });
   });
 
+  it("keeps one core per province: the owner's, the others become claims", () => {
+    pack.states.push({ i: 3, name: "Lotan" } as (typeof pack.states)[number]);
+    Object.assign(pack.provinces, [{ i: 0 }, { i: 1, state: 1 }, { i: 2, state: 3, cores: [1, 3] }]);
+    Provinces.updateClaims();
+    expect(pack.provinces[2]).toEqual({ i: 2, state: 3, cores: [3], claims: [1] });
+  });
+
   it("merge hands claims and occupations of merged states to the ruling one", () => {
     pack.states.push({ i: 3, name: "Lotan" } as (typeof pack.states)[number]);
     pack.provinces.push({
@@ -356,8 +363,7 @@ describe("States", () => {
       controller: 1
     } as (typeof pack.provinces)[number]);
     States.merge(2, [1]);
-    expect(pack.provinces[2]).toMatchObject({ cores: [3, 2], controller: 2 });
-    expect(pack.provinces[2].claims).toBeUndefined();
+    expect(pack.provinces[2]).toMatchObject({ cores: [3], claims: [2], controller: 2 });
   });
 
   it("merge hands lands, burgs, provinces and regiments to the ruling state", () => {
@@ -401,9 +407,8 @@ describe("Provinces", () => {
     Provinces.setClaim(1, 1, "core");
     expect(pack.provinces[1]).toMatchObject({ cores: [1], claims: [2] });
     expect(Provinces.getClaim(1, 2)).toBe("claim");
-    Provinces.setClaim(1, 2, "core");
-    expect(pack.provinces[1]).toMatchObject({ cores: [1, 2] });
-    expect(pack.provinces[1].claims).toBeUndefined();
+    Provinces.setClaim(1, 2, "core"); // one core per province: the old core holder keeps a claim
+    expect(pack.provinces[1]).toMatchObject({ cores: [2], claims: [1] });
     Provinces.setClaim(1, 2, "none");
     expect(Provinces.getClaim(1, 2)).toBe("none");
     expect(() => Provinces.setClaim(1, 2, "dream")).toThrow("The claim must be one of");
@@ -426,11 +431,13 @@ describe("Provinces", () => {
     expect(() => Provinces.setHistory(1, 5 as unknown as string)).toThrow("must be text");
   });
 
-  it("gives each state a core on the provinces it owns", () => {
+  it("gives each state a core on the provinces it owns that are nobody's core", () => {
     pack.provinces.push({ i: 2, state: 2, cores: [2] } as (typeof pack.provinces)[number]);
+    pack.provinces.push({ i: 3, state: 2, cores: [1] } as (typeof pack.provinces)[number]);
     expect(Provinces.addOwnerCores()).toBe(1);
     expect(pack.provinces[1].cores).toEqual([1]);
     expect(pack.provinces[2].cores).toEqual([2]);
+    expect(pack.provinces[3].cores).toEqual([1]); // a lost core stays with its state
   });
 
   it("setForm rebuilds the full name, setCapital takes a burg inside, remove frees the cells", () => {

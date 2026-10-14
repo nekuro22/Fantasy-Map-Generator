@@ -15,6 +15,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { isRelation, RELATIONS } from "@/data/diplomacy";
+import { SUBJECT_TYPES } from "@/data/subjects";
 import type { State } from "@/generators/states-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
@@ -36,7 +37,7 @@ const columns: EditorColumn<State>[] = [
   {
     key: "relations",
     label: "Relations",
-    width: "7em",
+    width: "17em",
     permanent: true,
     sortBy: state => state.diplomacy?.[selectedDiplomacyId] ?? "",
     sortType: "alpha"
@@ -122,8 +123,15 @@ function renderDialog(): void {
   ensureEl("diplomacyEditRelations").addEventListener("click", editRelations);
   ensureEl("diplomacyExport").addEventListener("click", exportCsv);
 
+  ensureEl("diplomacyBodySection").addEventListener("change", ev => {
+    const select = (ev.target as HTMLElement).closest<HTMLSelectElement>("select.subjectType");
+    if (!select) return;
+    States.setSubjectType(+select.dataset.vassal!, select.value, true);
+    refreshDiplomacyOverview();
+  });
   ensureEl("diplomacyBodySection").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
+    if (el.closest("select")) return;
     const line = el.closest<HTMLElement>(".states");
     if (line && !line.classList.contains("Self")) selectState(+line.dataset.id!);
   });
@@ -180,6 +188,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
       <div data-col="relations" data-tip="${tipText}">
         <fill-box fill="${color}" size=".9em"></fill-box>
         ${relation}
+        ${renderSubjectSelect(relation === "Vassal" ? state.i : relation === "Suzerain" ? selectedId : 0)}
       </div>
     </div>`;
   }
@@ -196,6 +205,20 @@ function renderDiplomacyPage(view: TableView<State>): void {
   ensureEl("diplomacyFooterStates").textContent = String(view.all.length + 1);
   renderEditorPagination(ensureEl("diplomacyFooter"), view, diplomacyTable.goto);
   updateDialog(dialogId, { width: "fit-content", position });
+}
+
+/** The kind of subject a vassal is, changeable; renames the vassal to fit */
+function renderSubjectSelect(vassalId: number): string {
+  if (!vassalId) return "";
+  const current = pack.states[vassalId].subject ?? "Vassal";
+  const options = Object.entries(SUBJECT_TYPES)
+    .map(
+      ([name, type]) =>
+        `<option value="${name}" title="${type.tip}" ${name === current ? "selected" : ""}>${name}</option>`
+    )
+    .join("");
+  return /* html */ `<select class="subjectType" data-vassal="${vassalId}" style="width: 9em; margin-left: .3em"
+    data-tip="${SUBJECT_TYPES[current]?.tip ?? ""}">${options}</select>`;
 }
 
 function stateHighlightOn(event: Event): void {
