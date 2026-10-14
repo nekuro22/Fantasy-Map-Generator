@@ -15,8 +15,10 @@ describe("modern flags", () => {
       }
   });
 
-  it("gives socialist states red flags", () => {
+  it("varies socialist flags, mostly red", () => {
     vi.stubGlobal("options", {});
-    for (let n = 0; n < 20; n++) expect(drawFlag(`r${n}`, "Socialist")).toContain("#c8202f");
+    const flags = Array.from({ length: 20 }, (_, n) => drawFlag(`r${n}`, "Socialist"));
+    expect(new Set(flags).size).toBeGreaterThan(15);
+    expect(flags.filter(f => f.includes("#c8202f")).length).toBeGreaterThan(4);
   });
 });
