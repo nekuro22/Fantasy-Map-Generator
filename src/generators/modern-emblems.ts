@@ -239,9 +239,15 @@ export function drawFlag(seed: string, form: string, stateColor = "", style?: Fl
 const iconId = (type: string, id: number) => `custom-flag-${type}-${id}`;
 
 /** Give a state, province or burg a modern flag as its emblem; the art is kept as a custom icon of the map */
-export function applyFlag(type: "state" | "province" | "burg", id: number, form: string, color = ""): void {
+export function applyFlag(
+  type: "state" | "province" | "burg",
+  id: number,
+  form: string,
+  color = "",
+  style?: FlagStyle
+): void {
   const seed = `${options.map.seed}-flag-${type}-${id}-${Math.floor(Math.random() * 1e6)}`;
-  const art: IconPicture = { kind: "svg", content: `<g>${drawFlag(seed, form, color)}</g>`, viewBox: FRAME };
+  const art: IconPicture = { kind: "svg", content: `<g>${drawFlag(seed, form, color, style)}</g>`, viewBox: FRAME };
   const icon = iconId(type, id);
   if (CustomIcons.get(icon)) CustomIcons.update(icon, art);
   else CustomIcons.add({ id: icon, ...art });
@@ -270,4 +276,23 @@ export function applyFlagsToStates(): void {
   }
 }
 
-export const ModernEmblems = { drawFlag, applyFlag, applyFlagsToStates, flagStyles };
+/** every flag style a person can pick by hand */
+export const FLAG_STYLES: [FlagStyle, string][] = [
+  ["tricolor", "Tricolor (horizontal)"],
+  ["tricolorVertical", "Tricolor (vertical)"],
+  ["bicolor", "Two stripes"],
+  ["stripesCanton", "Stripes and stars (USA-like)"],
+  ["nordic", "Nordic cross"],
+  ["cross", "Cross"],
+  ["emblem", "Emblem on field"],
+  ["bend", "Diagonal band"],
+  ["chevron", "Chevron"],
+  ["disc", "Disc"],
+  ["socialistStar", "Socialist: star"],
+  ["socialistHammer", "Socialist: hammer"],
+  ["socialistStripes", "Socialist: stripes"],
+  ["socialistSeal", "Socialist: seal"],
+  ["black", "Black"]
+];
+
+export const ModernEmblems = { FLAG_STYLES, drawFlag, applyFlag, applyFlagsToStates, flagStyles };

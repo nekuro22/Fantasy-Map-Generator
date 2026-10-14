@@ -5,7 +5,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { tinctures } from "@/data/emblems";
 import type { Burg } from "@/generators/burgs-generator";
 import { Emblems } from "@/generators/emblems-generator";
-import { ModernEmblems } from "@/generators/modern-emblems";
+import { type FlagStyle, ModernEmblems } from "@/generators/modern-emblems";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { type EmblemType, redrawEmblem, subscribeToEmblemReconciliation } from "@/renderers/draw-emblems";
@@ -234,7 +234,11 @@ function renderDialog(): void {
         <button id="emblemsUpload" data-tip="Replace the whole emblem with a picture: choose, link or upload an image, such as a ready coat of arms" class="icon-shield-alt"></button>
         <button id="emblemsDownload" data-tip="Download the emblem as an image" class="icon-download"></button>
         <button id="emblemsGallery" data-tip="Download all emblems as an HTML gallery (open it in a browser; preparing takes a while)" class="icon-layer-group"></button>
-        <button id="emblemsFlag" data-tip="Give it a modern flag: tricolors, stripes with stars, Nordic crosses, socialist designs. Shift + click flags every state" class="icon-flag"></button>
+        <select id="emblemFlagStyle" data-tip="Flag style for the flag button: Random picks one that fits the form of government">
+          <option value="">Random flag</option>
+          ${ModernEmblems.FLAG_STYLES.map(([id, label]) => `<option value="${id}">${label}</option>`).join("")}
+        </select>
+        <button id="emblemsFlag" data-tip="Give it a flag of the chosen style: tricolors, stripes with stars, Nordic crosses, socialist designs. Shift + click flags every state" class="icon-flag"></button>
         <button id="emblemsRegenerate" data-tip="Regenerate the emblem" class="icon-shuffle"></button>
         <button id="emblemsFocus" data-tip="Show the area or place of the emblem" class="icon-target"></button>
       </div>
@@ -555,7 +559,8 @@ function modernFlag(event: MouseEvent): void {
     for (const state of pack.states) if (state.i && !state.removed) redrawEmblem("state", state.i);
   } else {
     const color = (currentEl as State).color ?? pack.states[(currentEl as Province).state]?.color ?? "";
-    ModernEmblems.applyFlag(currentType, currentEl.i, form, color);
+    const style = ensureEl<HTMLSelectElement>("emblemFlagStyle").value as FlagStyle;
+    ModernEmblems.applyFlag(currentType, currentEl.i, form, color, style || undefined);
     redrawEmblem(currentType, currentEl.i);
   }
   EmblemRenderer.trigger(currentId, currentEl.coa);
