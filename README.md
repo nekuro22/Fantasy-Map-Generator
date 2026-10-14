@@ -180,3 +180,11 @@ Fehler im Generator selbst, die nicht mit den Änderungen dieses Forks zu tun ha
 - Beim Erzeugen der Karte entstehen Fraktionen aus den vorhandenen Bündnissen; übrige sozialistische Staaten bilden einen Block. "Erzeugen" macht das auf Knopfdruck neu.
 - Ebene "Factions" im Layers-Tab färbt die Staaten je Fraktion, der Ring markiert die Hauptstadt des Anführers. Die Weltgeschichte verzeichnet Gründung, Beitritt, Austritt und Auflösung.
 
+
+### Auf dem Raspberry Pi laufen lassen
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nekuro22/Fantasy-Map-Generator/master/tools/raspberry-pi/install.sh | bash
+```
+
+Das Skript installiert Node.js (falls nötig), holt den Code, baut ihn und richtet einen Dienst `fmg` ein, der beim Start mitläuft. Aufruf im Heimnetz: `http://<pi-ip>:5173/Fantasy-Map-Generator/`. Dasselbe Kommando noch einmal ausführen aktualisiert. Status: `systemctl status fmg`, Neustart: `sudo systemctl restart fmg`. Wichtig: Karten und Versionen speichert der Browser des Geräts, nicht der Pi.
