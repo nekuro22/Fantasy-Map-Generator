@@ -10,6 +10,9 @@ import { guide } from "./guide.js";
 import { buildLayers, DEFAULT_LAYERS, LAYERS } from "./layers.js";
 import { parseWorld } from "./load.js";
 import { MapFile } from "./mapfile.js";
+import { call, connection, pullFile, pushFile } from "./remote.js";
+import { startServer } from "./server.js";
+import { createToken, ensureToken, tokenPath } from "./token.js";
 import { details, entities, filterRows, Index, KINDS, kindOf, mapInfo, resolve, search, summary } from "./query.js";
 
 const HELP = `fmg — Fantasy Map Generator maps on the command line (.map files and "Full" JSON exports)
@@ -35,6 +38,12 @@ Edit (.map only; choose -o <new.map> or --in-place, which keeps <map>.bak; --dry
 Convert
   fmg convert <map> [-o dir] [-l layers] [--crs geo|pixel] [--single] [--csv]
 
+Server (run maps on another machine, e.g. a Raspberry Pi; every request needs the API token)
+  fmg serve [--dir ~/fmg-maps] [--port 5174] [--host 0.0.0.0]   start the API
+  fmg token [--new]                               show the token (--new replaces it; restart the server)
+  fmg remote maps | push <file.map> [name] | pull <name> [file] | info|list|get|search|diff|apply …   same as locally
+  Connect with FMG_URL=http://<address>:5174 and FMG_TOKEN=<token> (or --url / --token)
+
 Other
   fmg guide                                       instructions for AI agents
   fmg forms                                       governments, form names, relations, editable fields
@@ -58,7 +67,13 @@ const OPTIONS = {
   layers: { type: "string", short: "l" },
   crs: { type: "string", default: "geo" },
   single: { type: "boolean", default: false },
-  csv: { type: "boolean", default: false }
+  csv: { type: "boolean", default: false },
+  dir: { type: "string" },
+  port: { type: "string" },
+  host: { type: "string" },
+  new: { type: "boolean", default: false },
+  url: { type: "string" },
+  token: { type: "string" }
 };
 
 class UsageError extends Error {}
@@ -171,6 +186,22 @@ async function main(argv) {
       if (!Array.isArray(ops)) throw new UsageError("ops must be a JSON array like [{\"op\":\"set\",\"type\":\"states\",\"ref\":\"Aurelia\",\"field\":\"name\",\"value\":\"…\"}]");
       return edit(opts, args[0], ops);
     }
+    case "serve": {
+      const dir = opts.dir || process.env.FMG_MAPS || join(process.env.HOME ?? ".", "fmg-maps");
+      const port = +(opts.port || process.env.FMG_PORT || 5174);
+      await startServer({ dir, port, host: opts.host || "0.0.0.0", log: line => console.log(`${new Date().toISOString()} ${line}`) });
+      console.log(`fmg API on port ${port}, maps in ${dir}. Token: fmg token (file ${tokenPath()})`);
+      return new Promise(() => {});
+    }
+    case "token": {
+      if (opts.new) {
+        createToken();
+        process.stderr.write("New token made. Restart the server (the old token stops working then)\n");
+      }
+      return print(opts, opts.json ? JSON.stringify({ token: ensureToken(), file: tokenPath() }) : ensureToken());
+    }
+    case "remote":
+      return remote(opts, args);
     case "convert":
       need(1, "convert <map>");
       return convert(opts, args[0]);
@@ -180,6 +211,48 @@ async function main(argv) {
       return print(opts, guide());
     default:
       throw new UsageError(`Unknown command "${command}". Run fmg --help`);
+  }
+}
+
+async function remote(opts, args) {
+  const [sub, ...rest] = args;
+  const conn = connection(opts);
+  const name = n => encodeURIComponent(n);
+  const usage = text => {
+    throw new UsageError(`Usage: fmg remote ${text}`);
+  };
+  switch (sub) {
+    case "maps":
+      return output(opts, await call(conn, "GET", "/maps"));
+    case "push":
+      if (rest.length < 1) usage("push <file.map> [name]");
+      return output(opts, await pushFile(conn, rest[0], rest[1]));
+    case "pull":
+      if (rest.length < 1) usage("pull <name> [file]");
+      return output(opts, await pullFile(conn, rest[0], rest[1]));
+    case "info":
+      if (rest.length < 1) usage("info <name>");
+      return output(opts, await call(conn, "GET", `/maps/${name(rest[0])}/info`));
+    case "list":
+      if (rest.length < 2) usage("list <name> <type> [--where k=v] [--sort f --desc] [--limit n] [--fields a,b]");
+      return output(opts, await call(conn, "GET", `/maps/${name(rest[0])}/list`, { query: { type: rest[1], where: opts.where, sort: opts.sort, desc: opts.desc ? "1" : undefined, limit: opts.limit, fields: opts.fields } }));
+    case "get":
+      if (rest.length < 3) usage("get <name> <type> <id|name> [--raw]");
+      return output(opts, await call(conn, "GET", `/maps/${name(rest[0])}/get`, { query: { type: rest[1], ref: rest[2], raw: opts.raw ? "1" : undefined } }));
+    case "search":
+      if (rest.length < 2) usage("search <name> <text> [--type states]");
+      return output(opts, await call(conn, "GET", `/maps/${name(rest[0])}/search`, { query: { q: rest[1], type: opts.type } }));
+    case "diff":
+      if (rest.length < 2) usage("diff <old name> <new name>");
+      return output(opts, await call(conn, "GET", "/diff", { query: { old: rest[0], new: rest[1], limit: opts.limit } }));
+    case "apply": {
+      if (rest.length < 2) usage("apply <name> <ops.json|-> [--dry-run]");
+      const ops = JSON.parse(rest[1] === "-" ? readFileSync(0, "utf8") : readFileSync(rest[1], "utf8"));
+      if (!Array.isArray(ops)) throw new UsageError("ops must be a JSON array");
+      return output(opts, await call(conn, "POST", `/maps/${name(rest[0])}/ops`, { body: { ops, dryRun: opts["dry-run"] } }));
+    }
+    default:
+      return usage("maps | push | pull | info | list | get | search | diff | apply");
   }
 }
 

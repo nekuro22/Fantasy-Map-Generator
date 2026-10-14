@@ -187,4 +187,21 @@ Fehler im Generator selbst, die nicht mit den Änderungen dieses Forks zu tun ha
 curl -fsSL https://raw.githubusercontent.com/nekuro22/Fantasy-Map-Generator/master/tools/raspberry-pi/install.sh | bash
 ```
 
-Das Skript installiert Node.js (falls nötig), holt den Code, baut ihn und richtet einen Dienst `fmg` ein, der beim Start mitläuft. Aufruf im Heimnetz: `http://<pi-ip>:5173/Fantasy-Map-Generator/`. Dasselbe Kommando noch einmal ausführen aktualisiert. Status: `systemctl status fmg`, Neustart: `sudo systemctl restart fmg`. Wichtig: Karten und Versionen speichert der Browser des Geräts, nicht der Pi.
+Das Skript installiert Node.js (falls nötig), holt den Code, baut ihn und richtet einen Dienst `fmg` ein, der beim Start mitläuft. Aufruf im Heimnetz: `http://<pi-ip>:5173/Fantasy-Map-Generator/`. Status: `systemctl status fmg`, Neustart: `sudo systemctl restart fmg`. Wichtig: Karten und Versionen speichert der Browser des Geräts, nicht der Pi.
+
+**Aktualisieren:** `bash ~/fantasy-map-generator/tools/raspberry-pi/update.sh` holt den neuesten Code, baut neu und startet beide Dienste neu (`FMG_FORCE=1` baut auch ohne neue Commits).
+
+**API und Token:** Die Installation richtet zusätzlich den Dienst `fmg-api` (Port 5174) ein. Jede Anfrage braucht den Token:
+
+```sh
+fmg token                       # auf dem Pi: Token anzeigen (Datei ~/.config/fmg/token, nur für den Besitzer lesbar)
+fmg token --new                 # neuen Token erzeugen, danach: sudo systemctl restart fmg-api
+# auf einem anderen Rechner (Node 18+, tools/fmg-cli):
+export FMG_URL=http://<pi-ip>:5174 FMG_TOKEN=<token>
+fmg remote push Aurelia.map     # Karte auf den Pi laden
+fmg remote list Aurelia.map states --sort population --desc --limit 5
+fmg remote apply Aurelia.map ops.json
+fmg remote pull Aurelia.map     # bearbeitete Karte zurückholen (Backup bleibt als .bak auf dem Pi)
+```
+
+Sicherheit: Nur im Heimnetz oder über Tailscale benutzen, den Port nie ins Internet freigeben. Der Server nutzt kein HTTPS; der Token ist im Klartext unterwegs. Nach 10 falschen Tokens pro Minute sperrt er die Adresse kurz.

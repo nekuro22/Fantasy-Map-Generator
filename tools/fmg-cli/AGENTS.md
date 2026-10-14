@@ -119,6 +119,13 @@ fmg convert world.map -o out --csv               # GeoJSON per layer (+ CSV), lo
 fmg convert world.map -l states,provinces --single
 ```
 
+## Remote server
+
+If the maps live on a server (`FMG_URL` and `FMG_TOKEN` are set), use `fmg remote …` instead of file paths:
+`remote maps`, `remote push <file> [name]`, `remote pull <name> [file]`, `remote info|list|get|search|diff <name> …`,
+and `remote apply <name> <ops.json|-> [--dry-run]` (all or nothing, the server keeps `<name>.bak`).
+The token is a secret: never print it, commit it or put it in a map. `fmg serve` starts the server, `fmg token` shows the token.
+
 ## Good practice
 
 1. Read first (`info`, `get`, `list`) and quote ids in your plan.

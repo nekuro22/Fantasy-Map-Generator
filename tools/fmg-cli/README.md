@@ -108,6 +108,23 @@ Ebenen: states, provinces, cultures, religions, biomes, land, lakes, zones, burg
 cells. Weiter nach GeoPackage, Shapefile oder KML mit GDAL, z. B.
 `ogr2ogr -f GPKG aurelia.gpkg Aurelia_geojson/states.geojson`.
 
+### Als Server mit API-Token
+
+```sh
+fmg serve --dir ~/fmg-maps --port 5174     # startet die HTTP-API (Standard: 0.0.0.0:5174)
+fmg token                                  # Token anzeigen; wird beim ersten Start erzeugt (~/.config/fmg/token, 0600)
+fmg token --new                            # ersetzen (Server neu starten)
+
+export FMG_URL=http://<adresse>:5174 FMG_TOKEN=<token>
+fmg remote maps | push <datei.map> [name] | pull <name> [datei]
+fmg remote info|list|get|search|diff|apply …   # wie lokal, nur mit dem Kartennamen auf dem Server
+```
+
+Jede Anfrage braucht `Authorization: Bearer <token>`. Endpunkte: `GET /api/health`, `GET /api/maps`, `GET|PUT /api/maps/<name>`,
+`GET /api/maps/<name>/info|list|get|search`, `POST /api/maps/<name>/ops` (`{"ops":[…],"dryRun":false}`, alles oder nichts, Backup `.bak`),
+`GET /api/diff?old=&new=`. Kartennamen müssen auf `.map` enden. Kein HTTPS: nur im Heimnetz/Tailscale benutzen.
+Auf dem Raspberry Pi richtet `tools/raspberry-pi/install.sh` das als Dienst `fmg-api` ein, `update.sh` aktualisiert.
+
 ## Als Bibliothek
 
 ```js
