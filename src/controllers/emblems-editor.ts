@@ -5,6 +5,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { tinctures } from "@/data/emblems";
 import type { Burg } from "@/generators/burgs-generator";
 import { Emblems } from "@/generators/emblems-generator";
+import { ModernEmblems } from "@/generators/modern-emblems";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { type EmblemType, redrawEmblem, subscribeToEmblemReconciliation } from "@/renderers/draw-emblems";
@@ -233,6 +234,7 @@ function renderDialog(): void {
         <button id="emblemsUpload" data-tip="Replace the whole emblem with a picture: choose, link or upload an image, such as a ready coat of arms" class="icon-shield-alt"></button>
         <button id="emblemsDownload" data-tip="Download the emblem as an image" class="icon-download"></button>
         <button id="emblemsGallery" data-tip="Download all emblems as an HTML gallery (open it in a browser; preparing takes a while)" class="icon-layer-group"></button>
+        <button id="emblemsFlag" data-tip="Give it a modern flag: tricolors, stripes with stars, Nordic crosses, socialist designs. Shift + click flags every state" class="icon-flag"></button>
         <button id="emblemsRegenerate" data-tip="Regenerate the emblem" class="icon-shuffle"></button>
         <button id="emblemsFocus" data-tip="Show the area or place of the emblem" class="icon-target"></button>
       </div>
@@ -260,6 +262,7 @@ function renderDialog(): void {
   ensureEl("emblemChargeSizeNumber").oninput = changeChargeSize;
   ensureEl("emblemSizeSlider").oninput = changeSize;
   ensureEl("emblemSizeNumber").oninput = changeSize;
+  ensureEl("emblemsFlag").onclick = modernFlag;
   ensureEl("emblemsRegenerate").onclick = regenerate;
   ensureEl("emblemsArmoria").onclick = openInArmoria;
   ensureEl("emblemsCharge").onclick = () => pickPicture("charge");
@@ -542,6 +545,21 @@ function changeSize(ev: Event): void {
   const { x, y } = currentEl.coa;
   Emblems.place(`${currentType}:${currentEl.i}`, x ?? null, y ?? null, size);
   redrawEmblem(currentType, currentEl.i);
+}
+
+/** a modern flag for this emblem's owner; with Shift for every state */
+function modernFlag(event: MouseEvent): void {
+  const form = (currentEl as State).form ?? (pack.states[(currentEl as Province).state]?.form || "Republic");
+  if (event.shiftKey) {
+    ModernEmblems.applyFlagsToStates();
+    for (const state of pack.states) if (state.i && !state.removed) redrawEmblem("state", state.i);
+  } else {
+    const color = (currentEl as State).color ?? pack.states[(currentEl as Province).state]?.color ?? "";
+    ModernEmblems.applyFlag(currentType, currentEl.i, form, color);
+    redrawEmblem(currentType, currentEl.i);
+  }
+  EmblemRenderer.trigger(currentId, currentEl.coa);
+  updateEmblemData();
 }
 
 function regenerate(): void {

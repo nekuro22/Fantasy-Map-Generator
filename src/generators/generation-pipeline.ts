@@ -5,6 +5,11 @@ import { Population } from "@/generators/population-generator";
 import { Scenarios } from "@/generators/scenarios";
 import type { GridGraph } from "@/types/GridGraph";
 import { Coordinates } from "./coordinates";
+import { ModernEmblems } from "./modern-emblems";
+
+const applyModernFlags = () => {
+  if (options.generation?.states?.setting === "modern") ModernEmblems.applyFlagsToStates();
+};
 
 const generationPipelineSteps = [
   { id: "grid", run: ({ graph }) => Grid.prepare(graph) },
@@ -39,6 +44,7 @@ const generationPipelineSteps = [
   { id: "provinces", run: () => Provinces.generate() },
   { id: "scenarioColonies", run: () => Scenarios.applyColonies() },
   { id: "claims", run: () => !Scenarios.label && Provinces.generateClaims() },
+  { id: "modernFlags", run: () => !Scenarios.label && applyModernFlags() },
   { id: "provincePoles", run: () => Provinces.getPoles() },
   { id: "riversSpecify", run: () => Rivers.specify() },
   { id: "featureNames", run: () => Features.defineNames() },
@@ -87,6 +93,7 @@ const erasePipelineSteps = [
   { id: "stateForms", run: () => States.defineStateForms() },
   { id: "provinces", run: () => Provinces.generate() },
   { id: "claims", run: () => Provinces.generateClaims() },
+  { id: "modernFlags", run: () => applyModernFlags() },
   { id: "provincePoles", run: () => Provinces.getPoles() },
   { id: "riversSpecify", run: () => Rivers.specify() },
   { id: "featureNames", run: () => Features.defineNames() },
