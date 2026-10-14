@@ -5,7 +5,7 @@ import { basename, extname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { toCsv } from "./csv.js";
 import { diffWorlds } from "./diff.js";
-import { CLAIM_KINDS, Editor, FIELDS, RELATIONS, STATE_FORMS } from "./edit.js";
+import { CLAIM_KINDS, Editor, FACTION_ACTIONS, FACTION_TYPES, FIELDS, RELATIONS, STATE_FORMS } from "./edit.js";
 import { guide } from "./guide.js";
 import { buildLayers, DEFAULT_LAYERS, LAYERS } from "./layers.js";
 import { parseWorld } from "./load.js";
@@ -27,6 +27,9 @@ Edit (.map only; choose -o <new.map> or --in-place, which keeps <map>.bak; --dry
   fmg claim <map> <province> <state> core|claim|none
   fmg occupy <map> <province> <state|none>
   fmg owner-cores <map>                           every state gets a core on the provinces it owns
+  fmg faction <map> create <state> [name] [--type Pact]   found a faction led by a state
+  fmg faction <map> join <faction> <state> | leave <state> | leader <faction> <state> | dissolve <faction> | arms <faction>
+  fmg region <map> add <state> <name> [form] | remove <State/Region> | assign <province> <State/Region|none>
   fmg apply <map> <ops.json|->                    several edits at once, all or nothing
 
 Convert
@@ -134,6 +137,33 @@ async function main(argv) {
     case "owner-cores":
       need(1, "owner-cores <map>");
       return edit(opts, args[0], [{ op: "owner-cores" }]);
+    case "faction": {
+      need(3, "faction <map> create|join|leave|leader|dissolve|arms …");
+      const [, action, ...rest] = args;
+      const op = { op: "faction", action };
+      if (action === "create") Object.assign(op, { leader: rest[0], name: rest[1], type: opts.type });
+      else if (action === "join" || action === "leader") Object.assign(op, { faction: rest[0], state: rest[1] });
+      else if (action === "leave") Object.assign(op, { state: rest[0] });
+      else if (action === "dissolve" || action === "arms") Object.assign(op, { faction: rest[0] });
+      else throw new UsageError(`Faction actions: ${FACTION_ACTIONS.join(", ")}`);
+      if (rest[0] === undefined) throw new UsageError(`Usage: fmg faction <map> ${action} <${action === "leave" ? "state" : action === "create" ? "state" : "faction"}> …`);
+      if ((action === "join" || action === "leader") && rest[1] === undefined) throw new UsageError(`Usage: fmg faction <map> ${action} <faction> <state>`);
+      return edit(opts, args[0], [op]);
+    }
+    case "region": {
+      need(3, "region <map> add|remove|assign …");
+      const [, action, ...rest] = args;
+      if (action === "add") {
+        if (rest.length < 2) throw new UsageError("Usage: fmg region <map> add <state> <name> [form]");
+        return edit(opts, args[0], [{ op: "region-add", state: rest[0], name: rest[1], formName: rest[2] }]);
+      }
+      if (action === "remove") return edit(opts, args[0], [{ op: "region-remove", region: rest[0] }]);
+      if (action === "assign") {
+        if (rest.length < 2) throw new UsageError("Usage: fmg region <map> assign <province> <State/Region|none>");
+        return edit(opts, args[0], [{ op: "assign-region", province: rest[0], region: rest[1] }]);
+      }
+      throw new UsageError("Region actions: add, remove, assign");
+    }
     case "apply": {
       need(2, "apply <map> <ops.json|->");
       const text = args[1] === "-" ? readFileSync(0, "utf8") : readFileSync(args[1], "utf8");
@@ -145,7 +175,7 @@ async function main(argv) {
       need(1, "convert <map>");
       return convert(opts, args[0]);
     case "forms":
-      return output(opts, { governments: STATE_FORMS, relations: RELATIONS, claims: CLAIM_KINDS, editableFields: FIELDS });
+      return output(opts, { governments: STATE_FORMS, relations: RELATIONS, claims: CLAIM_KINDS, factionTypes: FACTION_TYPES, factionActions: FACTION_ACTIONS, editableFields: FIELDS });
     case "guide":
       return print(opts, guide());
     default:
@@ -289,6 +319,7 @@ function diffText(d) {
   section("New burgs", d.burgs, "added");
   section("Gone burgs", d.burgs, "removed");
   section("Diplomacy", d, "diplomacy");
+  section("Factions", d, "factions");
   if (d.chronicle?.length) out.push("", "## New chronicle entries", ...d.chronicle.map(e => `- ${e}`));
   return out.join("\n");
 }

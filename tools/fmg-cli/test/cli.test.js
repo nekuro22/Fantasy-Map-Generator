@@ -125,3 +125,64 @@ test("guide and forms are available", () => {
   const forms = JSON.parse(execFileSync("node", [cli, "forms", "--json"], { encoding: "utf8" }));
   assert.ok(forms.governments.Socialist.includes("People's Republic"));
 });
+
+test("factions and regions: create, join, edit, list and compare", { skip }, () => {
+  const out = join(dir, "factions.map");
+  const ops = join(dir, "faction-ops.json");
+  writeFileSync(
+    ops,
+    JSON.stringify([
+      { op: "relation", state: "Aymar", other: "Lylath", relation: "Neutral" },
+      { op: "faction", action: "create", leader: "Aymar", name: "Northern Pact", type: "Pact" },
+      { op: "faction", action: "join", faction: "Northern Pact", state: "Lylath" },
+      { op: "set", type: "states", ref: "Aymar", field: "lore", value: "Proud herders" },
+      { op: "region-add", state: "Aymar", name: "Nordmark", formName: "Duchy" },
+      { op: "set", type: "regions", ref: "Aymar/Nordmark", field: "lore", value: "Cold and green" }
+    ])
+  );
+  const r = run("apply", fixture, ops, "-o", out, "--json");
+  assert.equal(r.code, 0, r.out + r.err);
+  assert.ok(r.json().warnings.some(w => /Factions/.test(w)));
+
+  const factions = run("list", out, "factions", "--json").json();
+  assert.equal(factions.length, 1);
+  assert.deepEqual([factions[0].name, factions[0].leader, factions[0].members], ["Northern Pact", "Aymar", 2]);
+  const lylath = run("get", out, "state", "Lylath", "--json").json();
+  assert.equal(lylath.faction, "Northern Pact");
+  assert.equal(lylath.diplomacy.Aymar, "Ally");
+  const aymar = run("get", out, "state", "Aymar", "--json").json();
+  assert.equal(aymar.lore, "Proud herders");
+  assert.equal(aymar.regions[0].name, "Duchy of Nordmark");
+  const regions = run("list", out, "regions", "--json").json();
+  assert.deepEqual([regions[0].state, regions[0].fullName, regions[0].lore], ["Aymar", "Duchy of Nordmark", "yes"]);
+
+  // the file keeps its other records and still loads
+  const [a, b] = [readFileSync(fixture, "utf8").split("\r\n"), readFileSync(out, "utf8").split("\r\n")];
+  assert.ok(b.length > RECORDS.factions);
+  assert.equal(JSON.parse(b[RECORDS.factions])[0].leader, aymar.id);
+  assert.equal(a[RECORDS.biomes], b[RECORDS.biomes]);
+
+  // rules: one faction per state, no joining a member's enemy, a leader must be a member
+  const dup = run("faction", out, "join", "Northern Pact", "Lylath", "--dry-run", "--json");
+  assert.match(dup.json().error, /already in Northern Pact/);
+  const lead = run("faction", out, "leader", "Northern Pact", "Thok", "--dry-run", "--json");
+  assert.match(lead.json().error, /must be a member/);
+
+  // leaving hands the lead on; an empty faction ends
+  const left = join(dir, "left.map");
+  assert.equal(run("faction", out, "leave", "Aymar", "-o", left).code, 0);
+  assert.equal(run("list", left, "factions", "--json").json()[0].leader, "Lylath");
+  const gone = join(dir, "gone.map");
+  assert.equal(run("faction", left, "leave", "Lylath", "-o", gone).code, 0);
+  assert.equal(run("list", gone, "factions", "--json").json().length, 0);
+
+  // region assignment and the comparison of two versions
+  const province = run("list", fixture, "provinces", "--where", "state=Aymar", "--limit", "1", "--json").json()[0];
+  const assigned = join(dir, "assigned.map");
+  assert.equal(run("region", out, "assign", String(province.id), "Aymar/Nordmark", "-o", assigned).code, 0);
+  assert.equal(run("list", assigned, "regions", "--json").json()[0].provinces, 1);
+  const diff = run("diff", fixture, out, "--json").json();
+  assert.ok(diff.factions.some(f => f.change === "founded" && f.faction === "Northern Pact"));
+  const leftDiff = run("diff", out, left, "--json").json();
+  assert.ok(leftDiff.factions.some(f => f.change === "left" && f.state === "Aymar"));
+});

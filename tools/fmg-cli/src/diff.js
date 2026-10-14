@@ -154,6 +154,21 @@ export function diffWorlds(before, after, { limit = 40 } = {}) {
   result.diplomacy = relations.slice(0, limit);
   if (relations.length > limit) result.diplomacyTotal = relations.length;
 
+  // factions: founded, ended, members joined or left (maps from before factions have none)
+  const factionsA = new Map((before.factions ?? []).filter(f => !f.removed).map(f => [f.i, f]));
+  const factionsB = new Map((after.factions ?? []).filter(f => !f.removed).map(f => [f.i, f]));
+  const sname = (w, id) => w.states[id]?.name ?? `#${id}`;
+  const factionRows = [];
+  for (const [i, f] of factionsB) {
+    const was = factionsA.get(i);
+    if (!was) factionRows.push({ faction: f.name, change: "founded", state: sname(after, f.leader) });
+    for (const m of f.members) if (was && !was.members.includes(m)) factionRows.push({ faction: f.name, change: "joined", state: sname(after, m) });
+    for (const m of was?.members ?? []) if (!f.members.includes(m)) factionRows.push({ faction: f.name, change: "left", state: sname(after, m) });
+  }
+  for (const [i, f] of factionsA) if (!factionsB.has(i)) factionRows.push({ faction: f.name, change: "ended", state: sname(before, f.leader) });
+  result.factions = factionRows.slice(0, limit);
+  if (factionRows.length > limit) result.factionsTotal = factionRows.length;
+
   const newChronicle = (after.states[0]?.diplomacy ?? []).slice((before.states[0]?.diplomacy ?? []).length);
   if (Array.isArray(newChronicle) && newChronicle.length) result.chronicle = newChronicle.map(e => (Array.isArray(e) ? e.join(": ") : String(e)));
 
@@ -164,7 +179,8 @@ export function diffWorlds(before, after, { limit = 40 } = {}) {
     statesWithTerritoryChange: counts.territory,
     provincesChangedOwner: provinces.ownerChanged.length,
     burgsChangedState: burgs.stateChanged.length,
-    relationsChanged: relations.length
+    relationsChanged: relations.length,
+    factionChanges: factionRows.length
   };
   return result;
 }

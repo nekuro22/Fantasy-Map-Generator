@@ -1,5 +1,5 @@
 // Edits on a .map file's records, mirroring the generator's own model edits
-import { alive, byId, kindOf, resolve, stripHtml } from "./query.js";
+import { alive, byId, entities, kindOf, regionOwner, resolve, stripHtml } from "./query.js";
 
 export const STATE_FORMS = {
   Monarchy: ["Beylik", "Despotate", "Dominion", "Duchy", "Emirate", "Empire", "Horde", "Grand Duchy", "Heptarchy", "Khaganate", "Khanate", "Kingdom", "Marches", "Principality", "Satrapy", "Shogunate", "Sultanate", "Tsardom", "Ulus", "Viceroyalty"],
@@ -27,10 +27,15 @@ const RELATION_EVENTS = {
 };
 
 export const CLAIM_KINDS = ["core", "claim", "none"];
+export const FACTION_TYPES = ["Alliance", "League", "Pact", "Bloc", "Commonwealth", "Holy League", "Coalition", "Union"];
+export const FACTION_ACTIONS = ["create", "join", "leave", "dissolve", "leader", "arms"];
+
+// "Duchy of Nordmark", "Land Nordmark": the generator's naming of regions
+const regionFullName = (name, formName) => (!formName ? name : formName === "Land" ? `${formName} ${name}` : `${formName} of ${name}`);
 
 /** Editable fields per type */
 export const FIELDS = {
-  states: ["name", "fullName", "formName", "form", "color", "note", "history"],
+  states: ["name", "fullName", "formName", "form", "color", "note", "history", "lore"],
   provinces: ["name", "fullName", "formName", "color", "note", "history"],
   burgs: ["name", "population", "note"],
   cultures: ["name", "color", "note"],
@@ -40,7 +45,9 @@ export const FIELDS = {
   markers: ["name", "note"],
   zones: ["name", "color", "note"],
   features: ["name", "note"],
-  biomes: ["name", "color"]
+  biomes: ["name", "color"],
+  regions: ["name", "formName", "color", "lore", "history"],
+  factions: ["name", "type", "color"]
 };
 const ALIAS = { fullname: "fullName", formname: "formName", government: "form", pop: "population" };
 
@@ -84,15 +91,20 @@ export class Editor {
       relation: () => this.relation(args.state, args.other, args.relation),
       claim: () => this.claim(args.province, args.state, args.claim),
       occupy: () => this.occupy(args.province, args.state),
-      "owner-cores": () => this.ownerCores()
+      "owner-cores": () => this.ownerCores(),
+      faction: () => this.faction(args.action, args),
+      "region-add": () => this.regionAdd(args.state, args.name, args.formName, args.color),
+      "region-remove": () => this.regionRemove(args.region),
+      "assign-region": () => this.assignRegion(args.province, args.region)
     }[name];
-    if (!handler) throw new Error(`Unknown op "${name}". Ops: set, relation, claim, occupy, owner-cores`);
+    if (!handler)
+      throw new Error(`Unknown op "${name}". Ops: set, relation, claim, occupy, owner-cores, faction, region-add, region-remove, assign-region`);
     handler();
   }
 
   record(kind, e, field, from, to) {
     if (JSON.stringify(from) === JSON.stringify(to)) return;
-    this.file.touch(kind);
+    this.file.touch(kind === "regions" ? "states" : kind);
     this.changes.push({ type: kind, id: e.i, name: e.name, field, from: this.readable(field, from), to: this.readable(field, to) });
   }
 
@@ -125,6 +137,14 @@ export class Editor {
 
     if (field === "note") return assign("note", toNote(String(value)) || undefined);
     if (field === "history") return assign("history", String(value).replace(/\s+$/, "") || undefined);
+    if (field === "lore") return assign("lore", String(value).replace(/\s+$/, "") || undefined);
+    if (kind === "regions" && (field === "name" || field === "formName")) {
+      const name = field === "name" ? requireName(value) : e.name;
+      const formName = field === "formName" ? String(value).trim() : e.formName;
+      assign(field, field === "name" ? name : formName);
+      return assign("fullName", regionFullName(name, formName));
+    }
+    if (kind === "factions" && (field === "name" || field === "type")) return assign(field, requireName(value));
     if (field === "color") return assign("color", requireColor(value));
     if (field === "deity") return assign("deity", String(value).trim() || null);
     if (field === "population") {
@@ -269,6 +289,147 @@ export class Editor {
       this.record("provinces", p, "cores", before, p.cores);
     }
     this.claimsWarning();
+  }
+
+  // ---- regions: groups of provinces inside a state's record ----
+
+  regionAdd(stateRef, name, formName = "Region", color) {
+    const state = this.target("states", stateRef);
+    const regionName = requireName(name);
+    state.regions ??= [];
+    const i = Math.max(0, ...state.regions.map(r => r.i)) + 1;
+    const region = { i, name: regionName, formName, fullName: regionFullName(regionName, formName), color: color ? requireColor(color) : state.color ?? "#888888" };
+    state.regions.push(region);
+    this.file.touch("states");
+    this.changes.push({ type: "regions", id: i, name: region.fullName, field: "created in", from: undefined, to: state.name });
+    this.regionsWarning();
+  }
+
+  regionRemove(regionRef) {
+    const region = this.target("regions", regionRef);
+    const state = regionOwner(region);
+    state.regions = state.regions.filter(r => r.i !== region.i);
+    if (!state.regions.length) delete state.regions;
+    for (const p of this.data.provinces) if (alive(p) && p.state === state.i && p.region === region.i) delete p.region;
+    this.file.touch("states");
+    this.file.touch("provinces");
+    this.changes.push({ type: "regions", id: region.i, name: region.fullName, field: "removed", from: state.name, to: undefined });
+  }
+
+  assignRegion(provinceRef, regionRef) {
+    const p = this.target("provinces", provinceRef);
+    const none = regionRef === null || regionRef === undefined || ["none", "0", ""].includes(String(regionRef).toLowerCase());
+    let id;
+    if (!none) {
+      const region = this.target("regions", String(regionRef).includes("/") ? regionRef : `${this.data.states[p.state]?.name}/${regionRef}`);
+      if (regionOwner(region).i !== p.state) throw new Error(`${p.name} belongs to ${this.data.states[p.state]?.name}; the region belongs to ${regionOwner(region).name}`);
+      id = region.i;
+    }
+    const before = p.region;
+    if (id === undefined) delete p.region;
+    else p.region = id;
+    this.record("provinces", p, "region", before, p.region);
+    this.regionsWarning();
+  }
+
+  // ---- factions: pack-level list in its own record ----
+
+  factions() {
+    return this.data.factions;
+  }
+
+  factionOf(stateId) {
+    return this.factions().find(f => alive(f) && f.members.includes(stateId));
+  }
+
+  faction(action, a) {
+    if (!FACTION_ACTIONS.includes(action)) throw new Error(`Unknown faction action "${action}". Use ${FACTION_ACTIONS.join(", ")}`);
+    const touch = () => this.file.touch("factions");
+    const log = (f, field, from, to) => {
+      touch();
+      this.changes.push({ type: "factions", id: f.i, name: f.name, field, from, to });
+    };
+    const stateName = id => this.data.states[id]?.name ?? `#${id}`;
+    const size = id => this.data.states[id]?.area ?? 0;
+    const strongest = ids => ids.reduce((best, id) => (size(id) > size(best) ? id : best), ids[0]);
+    this.factionsWarning();
+
+    if (action === "create") {
+      const leader = this.target("states", a.leader);
+      const taken = this.factionOf(leader.i);
+      if (taken) throw new Error(`${leader.name} is already in ${taken.name}`);
+      const list = this.factions();
+      const i = Math.max(0, ...list.map(f => f.i)) + 1;
+      const year = this.settings().lore?.calendar?.year;
+      const type = requireName(a.type ?? "Alliance");
+      const faction = { i, name: requireName(a.name ?? `${leader.name} ${type}`), color: a.color ? requireColor(a.color) : leader.color ?? "#888888", type, leader: leader.i, members: [leader.i], ...(year === undefined ? {} : { founded: year }) };
+      list.push(faction);
+      return log(faction, "created, led by", undefined, leader.name);
+    }
+    if (action === "leave") {
+      const state = this.target("states", a.state);
+      const faction = this.factionOf(state.i);
+      if (!faction) throw new Error(`${state.name} is in no faction`);
+      faction.members = faction.members.filter(m => m !== state.i);
+      for (const m of faction.members) if (state.diplomacy?.[m] === "Ally") this.relation(state.i, m, "Friendly");
+      log(faction, "member left", state.name, undefined);
+      if (!faction.members.length) {
+        faction.removed = true;
+        log(faction, "removed (no members left)", undefined, undefined);
+      } else if (faction.leader === state.i) {
+        faction.leader = strongest(faction.members);
+        log(faction, "leader", state.name, stateName(faction.leader));
+      }
+      return;
+    }
+    const faction = this.target("factions", a.faction);
+    if (action === "dissolve") {
+      faction.removed = true;
+      return log(faction, "removed", undefined, undefined);
+    }
+    if (action === "join") {
+      const state = this.target("states", a.state);
+      const other = this.factionOf(state.i);
+      if (other) throw new Error(`${state.name} is already in ${other.name}; it must leave first`);
+      for (const m of faction.members)
+        if (state.diplomacy?.[m] === "Enemy") throw new Error(`${state.name} is at war with ${stateName(m)}, a member of ${faction.name}`);
+      for (const m of faction.members) this.relation(state.i, m, "Ally");
+      faction.members.push(state.i);
+      return log(faction, "member joined", undefined, state.name);
+    }
+    if (action === "leader") {
+      const state = this.target("states", a.state);
+      if (!faction.members.includes(state.i)) throw new Error("The leader must be a member of the faction");
+      const before = stateName(faction.leader);
+      faction.leader = state.i;
+      return log(faction, "leader", before, state.name);
+    }
+    // arms: the members join every war of the leader
+    const leader = this.data.states[faction.leader];
+    let declared = 0;
+    for (const enemy of entities(this.data, "states")) {
+      if (leader.diplomacy?.[enemy.i] !== "Enemy" || faction.members.includes(enemy.i)) continue;
+      for (const m of faction.members) {
+        if (m === faction.leader || this.data.states[m].diplomacy?.[enemy.i] === "Enemy") continue;
+        this.relation(m, enemy.i, "Enemy");
+        declared++;
+      }
+    }
+    if (!declared) this.warnings.push("The leader has no war the members are not already in");
+  }
+
+  settings() {
+    return this.file.lines[1]?.startsWith("{") ? JSON.parse(this.file.lines[1]) : {};
+  }
+
+  regionsWarning() {
+    const message = "Regions show in the generator fork with regions; the standard generator keeps them in the file but does not display them";
+    if (!this.warnings.includes(message)) this.warnings.push(message);
+  }
+
+  factionsWarning() {
+    const message = "Factions show in the generator fork with factions; the standard generator keeps them in the file but does not display them";
+    if (!this.warnings.includes(message)) this.warnings.push(message);
   }
 
   target(kind, ref) {

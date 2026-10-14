@@ -70,6 +70,7 @@ function fromMap(text) {
     markers: json(data[35], []),
     routes: json(data[37], []),
     zones: json(data[38], []),
+    factions: json(data[53], []),
     movedVertices
   };
 }
@@ -147,6 +148,7 @@ function fromJson(doc) {
     markers: pack.markers ?? [],
     routes: pack.routes ?? [],
     zones: pack.zones ?? [],
+    factions: pack.factions ?? [],
     movedVertices: 0
   };
 }

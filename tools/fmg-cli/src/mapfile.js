@@ -14,7 +14,8 @@ export const RECORDS = {
   rivers: 32,
   markers: 35,
   routes: 37,
-  zones: 38
+  zones: 38,
+  factions: 53 // the fork's factions; absent in other maps
 };
 
 export function decode(buffer) {
@@ -66,7 +67,10 @@ export class MapFile {
 
   toBuffer() {
     const lines = [...this.lines];
-    for (const kind of this.dirty) lines[RECORDS[kind]] = JSON.stringify(this.parsed[kind]);
+    for (const kind of this.dirty) {
+      while (lines.length <= RECORDS[kind]) lines.push("");
+      lines[RECORDS[kind]] = JSON.stringify(this.parsed[kind]);
+    }
     const text = Buffer.from(lines.join("\r\n"), "utf8");
     return this.gzipped ? gzipSync(text) : text;
   }

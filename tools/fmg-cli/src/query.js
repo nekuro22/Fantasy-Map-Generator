@@ -1,7 +1,7 @@
 // Read-only views of a world: entity summaries with resolved names, full records, search
 import { makeProjection } from "./layers.js";
 
-export const KINDS = ["states", "provinces", "burgs", "cultures", "religions", "rivers", "routes", "markers", "zones", "features", "biomes"];
+export const KINDS = ["states", "provinces", "burgs", "cultures", "religions", "rivers", "routes", "markers", "zones", "features", "biomes", "factions", "regions"];
 const ALIASES = {
   state: "states",
   province: "provinces",
@@ -16,7 +16,9 @@ const ALIASES = {
   marker: "markers",
   zone: "zones",
   feature: "features",
-  biome: "biomes"
+  biome: "biomes",
+  faction: "factions",
+  region: "regions"
 };
 // lists stored by array index; the rest are unordered with their own `i`
 const INDEXED = new Set(["states", "provinces", "burgs", "cultures", "religions", "features", "biomes"]);
@@ -46,13 +48,22 @@ export function kindOf(input) {
 }
 
 /** Living entities of a kind; neutrals, "no religion" and wildlands (id 0) are left out */
+/** Which state a region belongs to: regions live inside their state's record */
+const REGION_OWNER = new WeakMap();
+export const regionOwner = region => REGION_OWNER.get(region);
+
 export function entities(data, kind) {
+  if (kind === "regions")
+    return (data.states ?? []).flatMap(state =>
+      (state?.regions ?? []).filter(alive).map(region => (REGION_OWNER.set(region, state), region))
+    );
   const list = data[kind] ?? [];
   const withIds = kind === "biomes" ? list.map((b, i) => (alive(b) ? { i, ...b } : b)) : list;
   return withIds.filter(e => alive(e) && (!INDEXED.has(kind) || kind === "biomes" || e.i));
 }
 
 export function byId(data, kind, id) {
+  if (kind === "regions") throw new Error('Region ids repeat per state: write the region as "State/Region", e.g. "Aurelia/Nordmark"');
   if (kind === "biomes") return alive(data.biomes?.[id]) ? { i: id, ...data.biomes[id] } : undefined;
   const e = INDEXED.has(kind) ? data[kind]?.[id] : data[kind]?.find(x => x?.i === id);
   return alive(e) && (e.i === id || kind === "biomes") ? e : undefined;
@@ -62,6 +73,7 @@ export function byId(data, kind, id) {
 export function resolve(data, kind, ref) {
   const list = entities(data, kind);
   const text = String(ref ?? "").trim();
+  if (kind === "regions") return resolveRegion(data, list, text);
   if (/^\d+$/.test(text)) {
     const found = byId(data, kind, +text);
     if (found && (found.i || kind === "biomes" || kind === "rivers" || kind === "routes" || kind === "markers" || kind === "zones"))
@@ -80,6 +92,21 @@ export function resolve(data, kind, ref) {
   const near = list.filter(e => e.name?.toLowerCase().includes(lower)).slice(0, 5);
   const hint = near.length ? ` Did you mean: ${near.map(e => `${e.name} (${e.i})`).join(", ")}?` : "";
   throw new Error(`No ${kind.replace(/s$/, "")} "${text}".${hint}`);
+}
+
+/** A region by "State/Region" or by a name no other region has */
+function resolveRegion(data, list, text) {
+  const [stateText, regionText] = text.includes("/") ? text.split("/").map(s => s.trim()) : [null, text];
+  const state = stateText === null ? null : resolve(data, "states", stateText);
+  const pool = state ? list.filter(r => regionOwner(r) === state) : list;
+  const lower = regionText.toLowerCase();
+  for (const test of [r => r.name?.toLowerCase() === lower, r => r.fullName?.toLowerCase() === lower]) {
+    const hits = pool.filter(test);
+    if (hits.length === 1) return hits[0];
+    if (hits.length > 1)
+      throw new Error(`"${text}" matches several regions: ${hits.map(r => `${regionOwner(r).name}/${r.name}`).join(", ")}. Write "State/Region"`);
+  }
+  throw new Error(`No region "${text}"`);
 }
 
 const ambiguous = (kind, text, hits) =>
@@ -248,6 +275,31 @@ export function summary(world, index, kind, e) {
       });
     case "biomes":
       return clean({ id: e.i, name: e.name, ...cellStats, color: e.color });
+    case "factions":
+      return clean({
+        id: e.i,
+        name: e.name,
+        type: e.type,
+        leader: nameOf(world, "states", e.leader),
+        members: e.members?.length,
+        memberNames: namesOf(world, "states", e.members).join(", "),
+        founded: e.founded,
+        color: e.color
+      });
+    case "regions": {
+      const state = regionOwner(e);
+      return clean({
+        id: e.i,
+        name: e.name,
+        fullName: e.fullName,
+        formName: e.formName,
+        state: state?.name,
+        provinces: entities(world, "provinces").filter(p => p.state === state?.i && p.region === e.i).length,
+        lore: e.lore ? "yes" : undefined,
+        history: e.history ? "yes" : undefined,
+        color: e.color
+      });
+    }
   }
 }
 
@@ -284,6 +336,27 @@ export function details(world, index, kind, e, { raw = false } = {}) {
       .map(({ id, name, population, capital }) => clean({ id, name, population, capital: capital || undefined }));
     result.regiments = e.military?.length ?? 0;
     if (e.campaigns?.length) result.campaigns = e.campaigns.map(c => `${c.name} (${c.start}–${c.end ?? ""})`);
+  }
+  if (kind === "states") {
+    const own = provinces.filter(p => p.state === e.i);
+    const faction = (world.factions ?? []).find(f => !f.removed && f.members?.includes(e.i));
+    if (faction) result.faction = faction.name;
+    if (e.lore) result.lore = e.lore;
+    if (e.history) result.history = e.history;
+    result.regions = (e.regions ?? []).filter(alive).map(r => ({
+      id: r.i,
+      name: r.fullName ?? r.name,
+      provinces: own.filter(p => p.region === r.i).map(p => p.name)
+    }));
+  }
+  if (kind === "factions") {
+    result.membersDetail = (e.members ?? []).map(id => ({ id, name: nameOf(world, "states", id), leader: id === e.leader || undefined }));
+  }
+  if (kind === "regions") {
+    const state = regionOwner(e);
+    result.provinceList = provinces.filter(p => p.state === state?.i && p.region === e.i).map(ref);
+    if (e.lore) result.lore = e.lore;
+    if (e.history) result.history = e.history;
   }
   if (kind === "provinces")
     result.burgList = burgs.filter(b => world.cells.province[b.cell] === e.i).map(b => b.name);

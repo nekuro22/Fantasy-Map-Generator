@@ -21,9 +21,12 @@ fmg list world.map burgs --where population>50000 --where state~juw --json
 fmg get world.map state Aurelia --json                       # provinces, neighbors, diplomacy, occupations, claims, largest burgs, note
 fmg get world.map province 12 --json
 fmg search world.map "river" --json                          # names, full names and notes of every type
+fmg list world.map factions --json                           # alliances: leader, members, founding year
+fmg list world.map regions --json                            # duchies, federal lands: groups of provinces per state
+fmg get world.map region Aurelia/Nordmark --json             # regions are written "State/Region" (their ids repeat per state)
 ```
 
-Types: states, provinces, burgs, cultures, religions, rivers, routes, markers, zones, features, biomes
+Types: states, provinces, burgs, cultures, religions, rivers, routes, markers, zones, features, biomes, factions, regions
 (singular and "city" work too). Filters: `key=value`, `key!=value`, `key~text` (contains), `key>n`, `key<n`, `key>=n`, `key<=n`.
 Populations are people, areas are in the map's area unit (see `fmg info`).
 
@@ -47,7 +50,21 @@ fmg relation world.map Taisa Aurelia Vassal -o world-2.map   # Taisa becomes a v
 fmg claim world.map Ostmark Aurelia core -o world-2.map      # core | claim | none
 fmg occupy world.map Ostmark Mingia -o world-2.map           # occupier; "none" ends the occupation
 fmg owner-cores world.map -o world-2.map                     # each owner gets a core on its provinces
+fmg set world.map state Aurelia lore="Proud herders of the steppe" -o world-2.map   # lore: what the nation is like
+fmg faction world.map create Aurelia "Northern Pact" --type Pact -o world-2.map     # leader, name, kind
+fmg faction world.map join "Northern Pact" Mingia -o world-2.map                    # becomes an ally of every member
+fmg faction world.map leave Mingia -o world-2.map                                   # lead passes on, an empty faction ends
+fmg faction world.map leader "Northern Pact" Mingia -o world-2.map
+fmg faction world.map arms "Northern Pact" -o world-2.map                           # members join every war of the leader
+fmg faction world.map dissolve "Northern Pact" -o world-2.map
+fmg region world.map add Aurelia Nordmark Duchy -o world-2.map                      # a group of provinces of a state
+fmg region world.map assign Ostmark Aurelia/Nordmark -o world-2.map                 # "none" takes a province out
+fmg set world.map region Aurelia/Nordmark lore="Cold and green" history="1200 – Founded" -o world-2.map
+fmg region world.map remove Aurelia/Nordmark -o world-2.map
 ```
+
+Factions follow the generator's rules: a state is in one faction, members are allies of each other, a state at
+war with a member cannot join, and the leader is always a member.
 
 Several edits at once — all succeed or nothing is written:
 
@@ -60,7 +77,11 @@ fmg apply world.map ops.json -o world-2.map     # or pipe the JSON with "-" as t
   { "op": "relation", "state": "Aurelia", "other": "Mingia", "relation": "Ally" },
   { "op": "claim", "province": "Ostmark", "state": "Mingia", "claim": "claim" },
   { "op": "occupy", "province": "Ostmark", "state": "none" },
-  { "op": "owner-cores" }
+  { "op": "owner-cores" },
+  { "op": "faction", "action": "create", "leader": "Aurelia", "name": "Northern Pact", "type": "Pact" },
+  { "op": "faction", "action": "join", "faction": "Northern Pact", "state": "Mingia" },
+  { "op": "region-add", "state": "Aurelia", "name": "Nordmark", "formName": "Duchy" },
+  { "op": "assign-region", "province": "Ostmark", "region": "Aurelia/Nordmark" }
 ]
 ```
 
@@ -78,7 +99,7 @@ New maps get owner cores and war occupation automatically in the generator fork;
 
 ### Fork-only data
 
-`Socialist` government forms and province `cores` / `claims` / `controller` come from a generator fork.
+`Socialist` government forms, province `cores` / `claims` / `controller`, regions, `lore` and factions come from a generator fork.
 The standard generator loads such maps and keeps the values, but shows neither. `fmg` prints a note when an
 edit relies on them — pass that on to the user.
 

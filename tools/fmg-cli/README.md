@@ -42,10 +42,13 @@ fmg list Aurelia.map provinces --where state=Juwalda --fields id,name,controller
 fmg list Aurelia.map burgs --where "population>20000" --where state~juw
 fmg get  Aurelia.map state Friededenia                  # Provinzen, Nachbarn, Diplomatie, Besatzungen, Ansprüche, größte Städte
 fmg search Aurelia.map tunnel                           # Namen und Notizen aller Typen
+fmg list Aurelia.map factions                           # Bündnisse: Anführer, Mitglieder, Gründungsjahr
+fmg list Aurelia.map regions                            # Herzogtümer, Bundesländer: Provinzgruppen je Staat
+fmg get Aurelia.map region Friededenia/Nordmark         # Regionen heißen „Staat/Region“ (ihre IDs wiederholen sich je Staat)
 ```
 
 Typen: `states`, `provinces`, `burgs`, `cultures`, `religions`, `rivers`, `routes`, `markers`, `zones`,
-`features`, `biomes` (Einzahl geht auch). Filter: `=`, `!=`, `~` (enthält), `>`, `<`, `>=`, `<=`.
+`features`, `biomes`, `factions`, `regions` (Einzahl geht auch). Filter: `=`, `!=`, `~` (enthält), `>`, `<`, `>=`, `<=`.
 Einwohner sind echte Einwohnerzahlen, Flächen in der Einheit der Karte. `--json` liefert alles maschinenlesbar.
 
 ### Bearbeiten
@@ -62,6 +65,13 @@ fmg relation Aurelia.map Friededenia Boignia Enemy -o Aurelia-2.map    # beide S
 fmg claim  Aurelia.map Ostmark Friededenia core -o Aurelia-2.map       # core | claim | none
 fmg occupy Aurelia.map Ostmark Boignia -o Aurelia-2.map                # none beendet die Besatzung
 fmg owner-cores Aurelia.map -o Aurelia-2.map                           # Kernanspruch für jeden Besitzer
+fmg set Aurelia.map state Mingia lore="Stolze Steppenhirten" -o Aurelia-2.map   # Lore einer Nation (auch history)
+fmg faction Aurelia.map create Friededenia "Nordpakt" --type Pact -o Aurelia-2.map
+fmg faction Aurelia.map join Nordpakt Boignia -o Aurelia-2.map         # wird Verbündeter aller Mitglieder
+fmg faction Aurelia.map leave Boignia -o Aurelia-2.map                 # leader <fraktion> <staat> | dissolve | arms
+fmg region Aurelia.map add Friededenia Nordmark Duchy -o Aurelia-2.map
+fmg region Aurelia.map assign Ostmark Friededenia/Nordmark -o Aurelia-2.map   # none nimmt die Provinz heraus
+fmg set Aurelia.map region Friededenia/Nordmark lore="Kalt und grün" -o Aurelia-2.map
 fmg apply Aurelia.map aenderungen.json -o Aurelia-2.map                # mehrere Änderungen, alles oder nichts
 fmg forms                                                              # Staatsformen, Beziehungen, änderbare Felder
 ```
@@ -81,7 +91,7 @@ Generator lädt solche Karten trotzdem und behält die Werte, zeigt sie aber nic
 fmg diff Aurelia_2026-08-27.json Aurelia_2026-08-28.json
 ```
 
-Zeigt neue und verschwundene Staaten, geänderte Namen, Formen und Hauptstädte, Fläche und Einwohner je Staat,
+Zeigt neue und verschwundene Staaten, Fraktionen (gegründet, beigetreten, verlassen, aufgelöst), geänderte Namen, Formen und Hauptstädte, Fläche und Einwohner je Staat,
 welches Land von wem an wen ging (Zelle für Zelle), Provinzen mit neuem Besitzer, Besatzungen, Ansprüche,
 Städte, die den Staat gewechselt haben, Diplomatie und neue Chronik-Einträge. Funktioniert mit `.map` und
 JSON-Exporten. Karten mit anderem Seed werden nur über Namen verglichen (mit Hinweis).
