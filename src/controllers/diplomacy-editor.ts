@@ -5,6 +5,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
+import { SUBJECT_TYPES } from "@/data/subjects";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import type { Point } from "@/types/global";
 import { ensureEl, findEl } from "@/utils";
@@ -23,6 +24,8 @@ const dialogId = "diplomacyEditor";
 
 let stateId = 0;
 let chosenRelation = Object.keys(RELATIONS)[0]; // kept between openings
+let chosenSubject = ""; // "" lets the overlord's form decide
+const pendingTypes = new Map<number, string>(); // vassal -> kind of subject painted, set on Apply
 let options: EditorOptions = {};
 let strokes: Stroke[] = [];
 let activeStroke: Stroke | null = null;
@@ -88,6 +91,9 @@ function renderDialog(states: typeof pack.states): void {
       </label>`
     )
     .join("");
+  const subjects = [["", "Auto"], ...Object.keys(SUBJECT_TYPES).map(name => [name, name])]
+    .map(([value, label]) => `<option value="${value}" ${value === chosenSubject ? "selected" : ""}>${label}</option>`)
+    .join("");
   const sources = states
     .toSorted((a, b) => a.name.localeCompare(b.name))
     .map(state => `<option value="${state.i}">${state.name}</option>`)
@@ -101,6 +107,10 @@ function renderDialog(states: typeof pack.states): void {
         <select id="diplomacyEditorState" style="flex-grow: 1">${sources}</select>
       </label>
       <div style="display: grid; grid-template-rows: repeat(3, auto); grid-auto-flow: column; gap: .2em">${relations}</div>
+      <label style="display: flex; align-items: center; gap: 0.3em" data-tip="Kind of subject a painted vassal becomes. Auto picks one that suits the overlord's form of government">
+        Subject type
+        <select id="diplomacyEditorSubject" style="flex-grow: 1" ${subjectRelation(chosenRelation) ? "" : "disabled"}>${subjects}</select>
+      </label>
       <div style="margin-top: .3em">
         <button id="diplomacyEditorUndo" aria-label="Undo" data-tip="Undo last change" class="icon-ccw" disabled></button>
         <button id="diplomacyEditorApply" aria-label="Apply" data-tip="Apply changes" class="icon-check"></button>
@@ -111,7 +121,11 @@ function renderDialog(states: typeof pack.states): void {
 
   ensureEl(dialogId).addEventListener("change", event => {
     const input = event.target as HTMLInputElement;
-    if (input.name === "diplomacyRelation") chosenRelation = input.value;
+    if (input.name === "diplomacyRelation") {
+      chosenRelation = input.value;
+      ensureEl<HTMLSelectElement>("diplomacyEditorSubject").disabled = !subjectRelation(chosenRelation);
+    }
+    if (input.id === "diplomacyEditorSubject") chosenSubject = input.value;
   });
   const stateSelect = ensureEl<HTMLSelectElement>("diplomacyEditorState");
   stateSelect.value = String(stateId);
@@ -120,6 +134,8 @@ function renderDialog(states: typeof pack.states): void {
   ensureEl("diplomacyEditorApply").addEventListener("click", apply);
   ensureEl("diplomacyEditorDiscard").addEventListener("click", discard);
 }
+
+const subjectRelation = (relation: string): boolean => relation === "Vassal" || relation === "Suzerain";
 
 function selectState(id: number): void {
   if (!isValidState(id) || id === stateId) return;
@@ -168,7 +184,12 @@ function paintState(stroke: Stroke, id: number, relation: string): boolean {
   const subject = pack.states[id];
   const object = pack.states[stateId];
   const inverse = getInverseRelation(relation);
-  if (subject.diplomacy?.[stateId] === relation && object.diplomacy?.[id] === inverse) return false;
+  const vassalId = relation === "Vassal" ? id : relation === "Suzerain" ? stateId : 0;
+  const retype = vassalId && pendingTypes.get(vassalId) !== (chosenSubject || undefined);
+  if (subject.diplomacy?.[stateId] === relation && object.diplomacy?.[id] === inverse && !(retype && chosenSubject))
+    return false;
+  if (vassalId && chosenSubject) pendingTypes.set(vassalId, chosenSubject);
+  else if (vassalId) pendingTypes.delete(vassalId);
 
   for (const state of [subject, object]) {
     if (!stroke.diplomacy.has(state.i)) stroke.diplomacy.set(state.i, state.diplomacy?.slice());
@@ -199,10 +220,23 @@ function apply(): void {
     const newRelation = pack.states[subjectId].diplomacy![objectId];
     if (newRelation !== oldRelation)
       chronicle.push(States.getRelationRecord(subjectId, objectId, oldRelation, newRelation));
+    applySubjects(subjectId, objectId, oldRelation, newRelation);
   }
+  pendingTypes.clear();
 
   strokes = [];
   close();
+}
+
+// a new vassal gets the chosen (or a fitting) kind of subject; a freed one loses it
+function applySubjects(a: number, b: number, oldRelation: string | undefined, newRelation: string): void {
+  const vassalOf = (relation: string | undefined) => (relation === "Vassal" ? a : relation === "Suzerain" ? b : 0);
+  const [before, now] = [vassalOf(oldRelation), vassalOf(newRelation)];
+  if (before && before !== now && !States.getOverlord(before)) delete pack.states[before].subject;
+  if (!now) return;
+  const type = pendingTypes.get(now);
+  if (type) States.setSubjectType(now, type, true);
+  else if (before !== now) States.assignSubjects([now]);
 }
 
 function undo(): void {
@@ -244,6 +278,7 @@ function redraw(): void {
 // closing without Apply discards the changes
 function onDialogClose(): void {
   const changed = revertAll();
+  pendingTypes.clear();
   cancelAnimationFrame(frame);
   frame = 0;
 

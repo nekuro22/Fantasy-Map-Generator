@@ -3190,5 +3190,7 @@
  "{n}D scene": "{n}D-Szene",
  "Сhase phase. Naval units pursue and rarely shell enemy fleet": "Verfolgungsphase. Marineeinheiten verfolgen die feindliche Flotte und beschießen sie selten",
  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least {n}k tokens (Ollama's num_ctx).": "ⓘ Lokale Modelle brauchen keinen Schlüssel. Server angeben und Modellnamen eingeben. Das Kontextfenster des Servers auf mindestens {n}k Tokens setzen (num_ctx bei Ollama).",
- "🔑 Connect your AI key": "🔑 KI-Schlüssel verbinden"
+ "🔑 Connect your AI key": "🔑 KI-Schlüssel verbinden",
+ "Subject type": "Untertanen-Art",
+ "Kind of subject a painted vassal becomes. Auto picks one that suits the overlord's form of government": "Art des Untertanen, die ein bemalter Vassal wird. Auto wählt eine, die zur Staatsform des Oberherrn passt"
 }
